@@ -84,7 +84,6 @@ app.use((req, res, next) => {
 app.get('/api/health', (req, res) => {
   console.log('Health check accessed');
   const health = {
-    message: 'CR8 Backend Server'
     status: 'OK',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
