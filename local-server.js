@@ -8,6 +8,7 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3002;
 
+// CORS configuration
 const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',').map(origin => origin.trim()) || [
   'http://localhost:3000',
   'http://localhost:3001',
@@ -19,6 +20,7 @@ const corsOptions = {
   origin: function (origin, callback) {
     console.log('🔍 CORS Check - Origin:', origin);
 
+    // Allow server-to-server requests with no Origin (e.g. health checks, curl)
     if (!origin) return callback(null, true);
 
     if (origin.includes('railway.app') || 
@@ -43,28 +45,17 @@ const corsOptions = {
   optionsSuccessStatus: 200
 };
 
+// Apply security headers first
+app.use(helmet());
+
+// Apply CORS middleware
 app.use(cors(corsOptions));
 
-app.options('*', (req, res) => {
-  console.log('🔄 OPTIONS request for:', req.originalUrl);
-  res.header('Access-Control-Allow-Origin', req.get('Origin') || '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.sendStatus(200);
-});
-
-
+// Parse request body
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-app.use((req, res, next) => {
-  res.header('X-Content-Type-Options', 'nosniff');
-  res.header('X-Frame-Options', 'DENY');
-  res.header('X-XSS-Protection', '1; mode=block');
-  next();
-});
-
+// Request logging middleware
 app.use((req, res, next) => {
   const timestamp = new Date().toISOString();
   console.log(`\n[${timestamp}] ${req.method} ${req.originalUrl}`);
@@ -80,13 +71,29 @@ app.use((req, res, next) => {
     }
   }
 
+  res.on('finish', () => {
+    console.log(`Response status: ${res.statusCode}`);
+  });
+
   next();
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 Server listening on port ${PORT}`);
+// Root route
+app.get('/', (req, res) => {
+  res.json({
+    message: 'Welcome to the CR8 Backend API',
+    availableEndpoints: [
+      'GET /api/health',
+      'GET /api/training-data',
+      'POST /api/gemini',
+      'GET /api/gemini',
+      'GET /api/diagnose',
+      'GET /api/version'
+    ]
+  });
 });
 
+// Health check route
 app.get('/api/health', (req, res) => {
   console.log('Health check accessed');
   const health = {
@@ -109,6 +116,7 @@ app.get('/api/health', (req, res) => {
   res.status(200).json(health);
 });
 
+// API version route
 app.get('/api/version', (req, res) => {
   res.json({
     version: '1.0.0',
@@ -116,8 +124,7 @@ app.get('/api/version', (req, res) => {
   });
 });
 
-app.use(helmet());
-
+// 404 handler
 app.use((req, res) => {
   console.log(`❌ 404: ${req.method} ${req.originalUrl} not found`);
   res.status(404).json({
@@ -133,4 +140,9 @@ app.use((req, res) => {
       'GET /api/version'
     ]
   });
+});
+
+// Start server
+app.listen(PORT, () => {
+  console.log(`🚀 Server listening on port ${PORT}`);
 });
