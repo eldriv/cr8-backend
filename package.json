@@ -6,10 +6,22 @@
   "scripts": {
     "start": "node local-server.js"
   },
-"dependencies": {
-  "cors": "^2.8.5",
-  "dotenv": "^16.0.3",
-  "express": "^4.18.2",
-  "node-fetch": "^3.3.2"
- }
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3",
+    "express": "^4.21.2",
+    "node-fetch": "^3.3.2"
+  },
+  "description": "",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/eldriv/cr8-backend.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/eldriv/cr8-backend/issues"
+  },
+  "homepage": "https://github.com/eldriv/cr8-backend#readme"
 }

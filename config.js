@@ -1,6 +1,8 @@
 export const CONFIG = {
-  API: {
-    getApiBase: () => (process.env.NODE_ENV === 'production' ? 'https://cr8-agency-production.up.railway.app' : 'http://localhost:3002'),
+ API: {
+  getApiBase: () => {
+    return process.env.REACT_APP_API_BASE || 'http://localhost:3002';
+  },
     getEndpoints: (apiBase) => ({
       BACKEND_PROXY: `${apiBase}/api/gemini`,
       HEALTH_CHECK: `${apiBase}/api/health`,
