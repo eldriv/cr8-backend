@@ -20,8 +20,7 @@ const corsOptions = {
       'http://localhost:3000',
       'http://localhost:3001',
       'http://localhost:5173',
-      'https://cr8-nine.vercel.app',
-      'https://cr8-agency-production.up.railway.app'
+      'https://cr8-agency.netlify.app/',
     ];
     
     // Allow any Railway, Vercel, or Netlify domain
