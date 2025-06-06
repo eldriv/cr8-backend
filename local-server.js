@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import helmet from 'helmet';
 
 dotenv.config();
 
@@ -53,6 +54,10 @@ app.options('*', (req, res) => {
   res.sendStatus(200);
 });
 
+res.header('X-Content-Type-Options', 'nosniff');
+res.header('X-Frame-Options', 'DENY');
+res.header('X-XSS-Protection', '1; mode=block');
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
@@ -79,6 +84,10 @@ app.use((req, res, next) => {
   }
 
   next();
+});
+
+app.listen(PORT, () => {
+  console.log(`🚀 Server listening on port ${PORT}`);
 });
 
 app.get('/api/health', (req, res) => {
@@ -109,6 +118,8 @@ app.get('/api/version', (req, res) => {
     deployedAt: new Date().toISOString()
   });
 });
+
+app.use(helmet());
 
 app.use((req, res) => {
   console.log(`❌ 404: ${req.method} ${req.originalUrl} not found`);
