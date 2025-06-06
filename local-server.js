@@ -172,12 +172,19 @@ app.get('/api/version', (req, res) => {
   });
 });
 
-app.get('/api/gemini', (req, res) => {
+app.post('/api/gemini', (req, res) => {
+  const { prompt } = req.body;
+
+  if (!prompt) {
+    return res.status(400).json({ error: 'Missing prompt in request body' });
+  }
+
+  // For testing, just echo back the prompt with a dummy response
   res.json({
-    message: 'CR8 Gemini API endpoint',
-    usage: 'Use POST /api/gemini with { prompt } in the JSON body to get a response.'
+    reply: `Received your prompt of length ${prompt.length}. (This is a placeholder response.)`
   });
 });
+
 
 // 404 handler
 app.use((req, res) => {
