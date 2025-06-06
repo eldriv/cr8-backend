@@ -1,3 +1,4 @@
+// local-server.js
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -8,19 +9,18 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3002;
 
-// CORS configuration
+// Fix missing comma in allowedOrigins
 const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',').map(origin => origin.trim()) || [
+  'https://cr8-agency.netlify.app',
   'http://localhost:3000',
   'http://localhost:3001',
   'http://localhost:5173',
-  'https://cr8-agency.netlify.app'
 ];
 
 const corsOptions = {
   origin: function (origin, callback) {
     console.log('🔍 CORS Check - Origin:', origin);
 
-    // Allow server-to-server requests with no Origin (e.g. health checks, curl)
     if (!origin) return callback(null, true);
 
     if (
@@ -47,17 +47,12 @@ const corsOptions = {
   optionsSuccessStatus: 200
 };
 
-// Apply security headers first
 app.use(helmet());
-
-// Apply CORS middleware
 app.use(cors(corsOptions));
 
-// Parse request body
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Request logging middleware
 app.use((req, res, next) => {
   const timestamp = new Date().toISOString();
   console.log(`\n[${timestamp}] ${req.method} ${req.originalUrl}`);
@@ -80,7 +75,6 @@ app.use((req, res, next) => {
   next();
 });
 
-// Root route
 app.get('/', (req, res) => {
   res.json({
     message: 'Welcome to the CR8 Backend API',
@@ -95,7 +89,6 @@ app.get('/', (req, res) => {
   });
 });
 
-// Health check route
 app.get('/api/health', (req, res) => {
   console.log('Health check accessed');
   const health = {
@@ -118,7 +111,6 @@ app.get('/api/health', (req, res) => {
   res.status(200).json(health);
 });
 
-// API version route
 app.get('/api/version', (req, res) => {
   res.json({
     version: '1.0.0',
@@ -126,7 +118,6 @@ app.get('/api/version', (req, res) => {
   });
 });
 
-// === GET /api/gemini ROUTE ===
 app.get('/api/gemini', (req, res) => {
   res.json({
     message: 'CR8 Gemini API endpoint',
@@ -152,7 +143,15 @@ app.use((req, res) => {
   });
 });
 
-// Start server
+// Error handler for CORS and others
+app.use((err, req, res, next) => {
+  if (err && err.message === 'Not allowed by CORS') {
+    console.log('❌ CORS error:', err.message);
+    return res.status(403).json({ error: 'CORS origin denied' });
+  }
+  next(err);
+});
+
 app.listen(PORT, () => {
   console.log(`🚀 Server listening on port ${PORT}`);
 });
