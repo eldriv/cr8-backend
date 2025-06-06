@@ -7,7 +7,6 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3002;
 
-// Read allowed origins from env or fallback to default
 const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',').map(origin => origin.trim()) || [
   'http://localhost:3000',
   'http://localhost:3001',
