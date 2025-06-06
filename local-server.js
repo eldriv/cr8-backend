@@ -124,6 +124,14 @@ app.get('/api/version', (req, res) => {
   });
 });
 
+// === GET /api/gemini ROUTE ===
+app.get('/api/gemini', (req, res) => {
+  res.json({
+    message: 'CR8 Gemini API endpoint',
+    usage: 'Use POST /api/gemini with { prompt } in the JSON body to get a response.'
+  });
+});
+
 // 404 handler
 app.use((req, res) => {
   console.log(`❌ 404: ${req.method} ${req.originalUrl} not found`);
