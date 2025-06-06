@@ -172,16 +172,9 @@ app.get('/api/version', (req, res) => {
   });
 });
 
-app.post('/api/gemini', (req, res) => {
-  const { prompt } = req.body;
-
-  if (!prompt) {
-    return res.status(400).json({ error: 'Missing prompt in request body' });
-  }
-
-  // For testing, just echo back the prompt with a dummy response
+app.get('/api/gemini', (req, res) => {
   res.json({
-    reply: `Received your prompt of length ${prompt.length}. (This is a placeholder response.)`
+    message: 'This endpoint expects POST requests with a JSON body containing a "prompt".'
   });
 });
 
