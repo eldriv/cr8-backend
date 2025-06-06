@@ -12,11 +12,9 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',').map(origin => ori
   'http://localhost:3000',
   'http://localhost:3001',
   'http://localhost:5173',
-  'https://cr8-nine.vercel.app',
   'https://cr8-agency.netlify.app'
 ];
 
-// Enhanced CORS configuration
 const corsOptions = {
   origin: function (origin, callback) {
     console.log('🔍 CORS Check - Origin:', origin);
@@ -84,12 +82,8 @@ app.use((req, res, next) => {
   next();
 });
 
-// TRAINING_DATA and all your other existing endpoint handlers remain unchanged.
-// For brevity, I'm not pasting all of them again — you will copy them *as is*.
-
-// ✨ FIX: Remove duplicate /api/health and keep only this one:
 app.get('/api/health', (req, res) => {
-  console.log('💚 Health check accessed');
+  console.log('Health check accessed');
   const health = {
     status: 'OK',
     timestamp: new Date().toISOString(),
@@ -110,7 +104,6 @@ app.get('/api/health', (req, res) => {
   res.status(200).json(health);
 });
 
-// ✨ NEW: /api/version endpoint
 app.get('/api/version', (req, res) => {
   res.json({
     version: '1.0.0',
@@ -118,7 +111,6 @@ app.get('/api/version', (req, res) => {
   });
 });
 
-// ✨ Ensure this is in your 404 handler at the end
 app.use((req, res) => {
   console.log(`❌ 404: ${req.method} ${req.originalUrl} not found`);
   res.status(404).json({
