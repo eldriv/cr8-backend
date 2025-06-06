@@ -9,7 +9,7 @@ const PORT = process.env.PORT || 3002;
 
 // CORS configuration
 app.use(cors({
-  origin: 'https://cr8-agency-production.up.railway.app/',
+  origin: 'https://cr8-agency-production.up.railway.app',
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
