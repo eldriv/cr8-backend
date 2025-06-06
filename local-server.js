@@ -23,10 +23,12 @@ const corsOptions = {
     // Allow server-to-server requests with no Origin (e.g. health checks, curl)
     if (!origin) return callback(null, true);
 
-    if (origin.includes('railway.app') || 
-        origin.includes('vercel.app') || 
-        origin.includes('netlify.app') ||
-        allowedOrigins.includes(origin)) {
+    if (
+      origin.includes('railway.app') ||
+      origin.includes('vercel.app') ||
+      origin.includes('netlify.app') ||
+      allowedOrigins.includes(origin)
+    ) {
       console.log('✅ CORS - Origin allowed:', origin);
       return callback(null, true);
     }
@@ -58,7 +60,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Request logging middleware
 app.use((req, res, next) => {
   const timestamp = new Date().toISOString();
-  console.log(\n[${timestamp}] ${req.method} ${req.originalUrl});
+  console.log(`\n[${timestamp}] ${req.method} ${req.originalUrl}`);
   console.log('Origin:', req.get('Origin'));
   console.log('User-Agent:', req.get('User-Agent')?.substring(0, 100));
   console.log('Content-Type:', req.get('Content-Type'));
@@ -72,7 +74,7 @@ app.use((req, res, next) => {
   }
 
   res.on('finish', () => {
-    console.log(Response status: ${res.statusCode});
+    console.log(`Response status: ${res.statusCode}`);
   });
 
   next();
@@ -134,10 +136,10 @@ app.get('/api/gemini', (req, res) => {
 
 // 404 handler
 app.use((req, res) => {
-  console.log(❌ 404: ${req.method} ${req.originalUrl} not found);
+  console.log(`❌ 404: ${req.method} ${req.originalUrl} not found`);
   res.status(404).json({
     error: 'Not Found',
-    message: ${req.method} ${req.originalUrl} not found,
+    message: `${req.method} ${req.originalUrl} not found`,
     availableEndpoints: [
       'GET /',
       'GET /api/health',
@@ -152,5 +154,5 @@ app.use((req, res) => {
 
 // Start server
 app.listen(PORT, () => {
-  console.log(🚀 Server listening on port ${PORT});
+  console.log(`🚀 Server listening on port ${PORT}`);
 });
