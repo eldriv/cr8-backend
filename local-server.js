@@ -1,4 +1,4 @@
-// Complete backend server configuration
+// Complete backend server configuration - FIXED VERSION
 const express = require('express');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
@@ -56,6 +56,54 @@ Key traits:
 - Solution-oriented responses
 - Clear, actionable advice`;
 }
+
+// Training data content - ADD THIS
+const CR8_TRAINING_DATA = `# CR8 Digital Creative Agency - Training Data
+
+## About CR8
+CR8 is a digital creative agency that helps clients bring their creative vision to life through graphic design, video editing, animation, and motion graphics.
+
+**Tagline**: Let's Create & Unleash Your Creative Vision.
+
+## Contact Information
+- Email: creativscr8@gmail.com
+- Alternative Email: eldriv@proton.me
+- Portfolio: https://cr8-agency.netlify.app/#works
+
+## Services Offered
+- Graphic Design
+- Video Editing
+- Motion Graphics
+- Animation
+- Logo Animation
+
+## Target Audience
+We serve clients who need visual storytelling and branding services. Our goal is to bring your vision to life with creative execution.
+
+## Service Packages
+### LOE 1: Basic Short Form Video (30s–1m), Basic Long Form Video (5m–10m), Basic Motion Graphic Elements
+### LOE 2: Short Form Video (30s–1m), Long Form Video (5m–20m), Motion Graphics with Intro Animation
+### LOE 3: Advanced Video Editing with VFX, Template Creation, Full Motion Graphics
+
+## Why Brands Trust CR8
+- Uphold the highest quality standards
+- Align projects with brand identity
+- Stay current with industry trends
+
+## Production Process
+1. Understanding Your Brand
+2. Drafting Storyboard (24–48 hours)
+3. Production (12–72 hours)
+4. Client Approval
+5. Revision
+
+## Creative Expertise
+- Brand Identity Design
+- Social Media Content
+- Video Production
+- Motion Graphics
+- Animation Services
+- Visual Storytelling`;
 
 // Enhanced fallback response generator
 function generateEnhancedCR8Response(prompt) {
@@ -127,6 +175,15 @@ app.get('/api/health', (req, res) => {
     memory: process.memoryUsage(),
     version: process.version
   });
+});
+
+// FIXED: Training data endpoint - return actual training data
+app.get('/api/training-data', (req, res) => {
+  console.log('Training data requested');
+  
+  // Return the training data as plain text (not JSON)
+  res.setHeader('Content-Type', 'text/plain');
+  res.send(CR8_TRAINING_DATA);
 });
 
 // Chat endpoint with comprehensive error handling
@@ -228,7 +285,7 @@ app.post('/api/chat', async (req, res) => {
         ]
       };
 
-      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`;
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
       
       console.log('Making request to Gemini API...');
       const response = await fetch(apiUrl, {
@@ -373,15 +430,6 @@ app.get('/api/test-gemini', async (req, res) => {
       error: error.message
     });
   }
-});
-
-// Training data endpoint
-app.get('/api/training-data', (req, res) => {
-  res.json({
-    message: 'Training data endpoint',
-    status: 'available',
-    description: 'This endpoint can be used to manage training data for the CR8 assistant'
-  });
 });
 
 // Debug endpoint
