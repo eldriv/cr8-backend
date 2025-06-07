@@ -1,48 +1,59 @@
 import express from 'express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
+import { config } from 'dotenv';
+import { OpenAI } from 'openai';
+
+config(); // Load .env
 
 const app = express();
-const PORT = process.env.PORT || 3002;
+const port = process.env.PORT;
 
 app.use(cors());
 app.use(bodyParser.json());
-const DEFAULT_TRAINING_DATA = `
-CR8 - Digital Solutions Company
-We specialize in software development, AI research, and digital solutions for businesses.
-Portfolio includes web apps, mobile apps, and AI-powered tools.
-Contact us at contact@cr8.com
-`;
 
-// Allow CORS for all origins or specify your frontend domain
-app.use(cors({
-  origin: process.env.FRONTEND_ORIGIN || 'https://cr8-agency.netlify.app', 
-}));
-app.use(express.json());
-
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', uptime: process.uptime() });
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
-app.get('/api/training-data', (req, res) => {
-  res.type('text/plain').send(DEFAULT_TRAINING_DATA);
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: Date.now() });
 });
 
-app.get('/api/gemini', (req, res) => {
-  res.json({
-    response: "Hello! This is the CR8 AI assistant. Please POST your questions to get detailed answers."
-  });
-});
+// Chat endpoint
+app.post('/chat', async (req, res) => {
+  try {
+    const { prompt } = req.body;
+    if (!prompt || typeof prompt !== 'string') {
+      return res.status(400).json({ error: 'Invalid prompt' });
+    }
 
-app.post('/api/gemini', (req, res) => {
-  const { prompt } = req.body;
-  if (!prompt || typeof prompt !== 'string') {
-    return res.status(400).json({ error: 'Invalid or missing prompt' });
+    // Call OpenAI chat completion
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini", // or your preferred model
+      messages: [
+        { role: "system", content: "You are a helpful assistant." },
+        { role: "user", content: prompt },
+      ],
+      max_tokens: 500,
+      temperature: 0.7,
+    });
+
+    const text = completion.choices?.[0]?.message?.content || "";
+
+    res.json({
+      candidates: [{ content: { parts: [{ text }] } }],
+      content: { parts: [{ text }] },
+      text,
+    });
+  } catch (error) {
+    console.error('Error in /chat:', error);
+    res.status(500).json({ error: error.message || 'Internal Server Error' });
   }
-  const responseText = `You asked: "${prompt}". Here's a mocked response based on CR8 data.`;
-  res.json({ response: responseText });
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+// Start server
+app.listen(port, () => {
+  console.log(`Local backend server listening at http://localhost:${port}`);
 });
