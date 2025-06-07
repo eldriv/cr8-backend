@@ -1,10 +1,12 @@
-// local-server.js
-const express = require('express');
-const cors = require('cors');
+import express from 'express';
+import cors from 'cors';
+import bodyParser from 'body-parser';
 
 const app = express();
 const PORT = process.env.PORT || 3002;
 
+app.use(cors());
+app.use(bodyParser.json());
 const DEFAULT_TRAINING_DATA = `
 CR8 - Digital Solutions Company
 We specialize in software development, AI research, and digital solutions for businesses.
