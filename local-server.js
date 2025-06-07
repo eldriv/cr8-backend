@@ -226,84 +226,31 @@ app.get('/api/version', (req, res) => {
   });
 });
 
-// Gemini endpoint - Enhanced with better error handling and proper response format
+// Example Gemini API POST endpoint - clean version with structured logging & response
 app.post('/api/gemini', async (req, res) => {
-  console.log('POST /api/gemini - Request received');
-  
+  console.log('🔹 Received POST /api/gemini');
+
   try {
     const { prompt } = req.body;
 
-    if (!prompt) {
-      console.log('❌ Missing prompt in request body');
+    // Validate input
+    if (!prompt || typeof prompt !== 'string' || prompt.trim().length === 0) {
+      console.log('❌ Missing or invalid prompt');
       return res.status(400).json({ 
-        error: 'Missing prompt in request body',
-        received: Object.keys(req.body)
+        error: 'Missing or invalid prompt', 
+        received: req.body 
       });
     }
 
-    console.log('✅ Valid prompt received, length:', prompt.length);
-    console.log('Prompt preview:', prompt.substring(0, 200) + '...');
+    const trimmedPrompt = prompt.trim();
+    console.log(`✅ Processing prompt (length: ${trimmedPrompt.length})`);
+    console.log(`Prompt preview: "${trimmedPrompt.substring(0, 100)}..."`);
 
-    // Simple response generation based on the prompt
+    // Simulated Gemini response logic (replace this with real API call later)
     let response;
-    
-    // Check if it's a CR8-related question
-    if (prompt.toLowerCase().includes('cr8') || prompt.toLowerCase().includes('what is cr8')) {
-      response = `CR8 is a digital creative agency that helps clients bring their creative vision to life through graphic design, video editing, animation, and motion graphics. Our tagline is "Let's Create & Unleash Your Creative Vision."
 
-We offer services including:
-- Graphic Design
-- Video Editing
-- Motion Graphics
-- Animation
-- Logo Animation
+    const lowerPrompt = trimmedPrompt.toLowerCase();
 
-You can contact us at creativscr8@gmail.com or eldriv@proton.me, and view our portfolio at https://cr8-agency.netlify.app/#works.`;
-    } else {
-      response = `Thank you for your question. I'm the CR8 assistant and I'm here to help with information about CR8's services, portfolio, and general inquiries. 
-
-If you have questions about CR8's creative services, production process, or packages, feel free to ask!`;
-    }
-
-    // Return response as JSON (to match frontend expectation)
-    console.log('✅ Sending response, length:', response.length);
-    res.json({ 
-      response: response,
-      timestamp: new Date().toISOString()
-    });
-
-  } catch (error) {
-    console.error('❌ Error in Gemini endpoint:', error);
-    res.status(500).json({
-      error: 'Internal server error',
-      message: error.message
-    });
-  }
-});
-
-// GET version of Gemini endpoint for testing
-app.post('/api/gemini', async (req, res) => {
-  console.log('POST /api/gemini - Request received');
-  
-  try {
-    const { prompt } = req.body;
-
-    if (!prompt) {
-      console.log('❌ Missing prompt in request body');
-      return res.status(400).json({ 
-        error: 'Missing prompt in request body',
-        received: Object.keys(req.body)
-      });
-    }
-
-    console.log('✅ Valid prompt received, length:', prompt.length);
-    console.log('Prompt preview:', prompt.substring(0, 200) + '...');
-
-    // Simple response generation based on the prompt
-    let response;
-    
-    // Check if it's a CR8-related question
-    const lowerPrompt = prompt.toLowerCase();
     if (lowerPrompt.includes('cr8') || lowerPrompt.includes('what is cr8')) {
       response = `CR8 is a digital creative agency that helps clients bring their creative vision to life through graphic design, video editing, animation, and motion graphics. Our tagline is "Let's Create & Unleash Your Creative Vision."
 
@@ -340,21 +287,22 @@ We serve clients who need visual storytelling and branding services. Our goal is
 
 You can also customize any combination of services based on your needs.`;
     } else {
+      // Fallback simulated response
       response = `Thank you for your question! I'm the CR8 assistant and I'm here to help with information about CR8's services, portfolio, and general inquiries. 
 
 CR8 is a digital creative agency specializing in graphic design, video editing, animation, and motion graphics. Feel free to ask about our services, packages, or contact information!`;
     }
 
-    // Ensure response is properly formatted
+    // Ensure response is safe and non-empty
     if (!response || response.trim().length === 0) {
       response = "I'm here to help with information about CR8's creative services. Please feel free to ask about our services, portfolio, or contact information!";
     }
 
-    console.log('✅ Generated response, length:', response.length);
-    console.log('Response preview:', response.substring(0, 150) + '...');
+    // Log response info
+    console.log(`✅ Sending response (length: ${response.length})`);
+    console.log(`Response preview: "${response.substring(0, 150)}..."`);
 
-    // Set proper headers and return response as JSON
-    res.setHeader('Content-Type', 'application/json');
+    // Send response
     res.status(200).json({ 
       response: response.trim(),
       timestamp: new Date().toISOString(),
@@ -362,7 +310,8 @@ CR8 is a digital creative agency specializing in graphic design, video editing, 
     });
 
   } catch (error) {
-    console.error('❌ Error in Gemini endpoint:', error);
+    console.error('❌ Error in /api/gemini:', error);
+
     res.status(500).json({
       error: 'Internal server error',
       message: error.message,
