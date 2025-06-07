@@ -282,13 +282,94 @@ If you have questions about CR8's creative services, production process, or pack
 });
 
 // GET version of Gemini endpoint for testing
-app.get('/api/gemini', (req, res) => {
-  res.json({
-    message: 'Gemini endpoint is working',
-    method: 'GET',
-    timestamp: new Date().toISOString(),
-    note: 'Use POST method to send prompts'
-  });
+app.post('/api/gemini', async (req, res) => {
+  console.log('POST /api/gemini - Request received');
+  
+  try {
+    const { prompt } = req.body;
+
+    if (!prompt) {
+      console.log('❌ Missing prompt in request body');
+      return res.status(400).json({ 
+        error: 'Missing prompt in request body',
+        received: Object.keys(req.body)
+      });
+    }
+
+    console.log('✅ Valid prompt received, length:', prompt.length);
+    console.log('Prompt preview:', prompt.substring(0, 200) + '...');
+
+    // Simple response generation based on the prompt
+    let response;
+    
+    // Check if it's a CR8-related question
+    const lowerPrompt = prompt.toLowerCase();
+    if (lowerPrompt.includes('cr8') || lowerPrompt.includes('what is cr8')) {
+      response = `CR8 is a digital creative agency that helps clients bring their creative vision to life through graphic design, video editing, animation, and motion graphics. Our tagline is "Let's Create & Unleash Your Creative Vision."
+
+We offer services including:
+- Graphic Design
+- Video Editing
+- Motion Graphics
+- Animation
+- Logo Animation
+
+You can contact us at creativscr8@gmail.com or eldriv@proton.me, and view our portfolio at https://cr8-agency.netlify.app/#works.`;
+    } else if (lowerPrompt.includes('services')) {
+      response = `CR8 offers the following creative services:
+- Graphic Design
+- Video Editing
+- Motion Graphics
+- Animation
+- Logo Animation
+
+We serve clients who need visual storytelling and branding services. Our goal is to bring your vision to life with creative execution.`;
+    } else if (lowerPrompt.includes('contact')) {
+      response = `You can contact CR8 via:
+- Email: creativscr8@gmail.com
+- Alternative email: eldriv@proton.me
+- Portfolio: https://cr8-agency.netlify.app/#works`;
+    } else if (lowerPrompt.includes('package') || lowerPrompt.includes('loe')) {
+      response = `CR8 offers three main packages:
+
+**LOE 1**: Basic Short Form Video (30s–1m), Basic Long Form Video (5m–10m), Basic Motion Graphics (Lower Thirds)
+
+**LOE 2**: Short Form Video (30s–1m), Long Form Video (5m–20m), Motion Graphics (Lower Thirds, Intro Animation, Logo Animation)
+
+**LOE 3**: Advanced Video Editing with VFX, Template Creation, Full Motion Graphics (Lower Thirds, Intro Animation, Logo Animation)
+
+You can also customize any combination of services based on your needs.`;
+    } else {
+      response = `Thank you for your question! I'm the CR8 assistant and I'm here to help with information about CR8's services, portfolio, and general inquiries. 
+
+CR8 is a digital creative agency specializing in graphic design, video editing, animation, and motion graphics. Feel free to ask about our services, packages, or contact information!`;
+    }
+
+    // Ensure response is properly formatted
+    if (!response || response.trim().length === 0) {
+      response = "I'm here to help with information about CR8's creative services. Please feel free to ask about our services, portfolio, or contact information!";
+    }
+
+    console.log('✅ Generated response, length:', response.length);
+    console.log('Response preview:', response.substring(0, 150) + '...');
+
+    // Set proper headers and return response as JSON
+    res.setHeader('Content-Type', 'application/json');
+    res.status(200).json({ 
+      response: response.trim(),
+      timestamp: new Date().toISOString(),
+      status: 'success'
+    });
+
+  } catch (error) {
+    console.error('❌ Error in Gemini endpoint:', error);
+    res.status(500).json({
+      error: 'Internal server error',
+      message: error.message,
+      response: "I apologize, but I encountered an error processing your request. Please try again.",
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 // Diagnose endpoint for debugging
