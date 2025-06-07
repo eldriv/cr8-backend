@@ -1,16 +1,37 @@
 {
-  "name": "cr8-backend",
+  "name": "chatbot-backend",
   "version": "1.0.0",
-  "type": "module",
+  "description": "Backend server for AI chatbot widget",
   "main": "local-server.js",
   "scripts": {
-    "start": "node local-server.js"
+    "start": "node local-server.js",
+    "dev": "nodemon local-server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "engines": {
+    "node": ">=16.0.0"
   },
   "dependencies": {
-    "cors": "^2.8.5",
-    "dotenv": "^16.0.3",
     "express": "^4.18.2",
-    "helmet": "^8.1.0",
-    "node-fetch": "^3.3.2"
+    "cors": "^2.8.5",
+    "node-fetch": "^2.6.12",
+    "express-rate-limit": "^6.10.0",
+    "helmet": "^7.0.0",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "keywords": [
+    "chatbot",
+    "ai",
+    "express",
+    "api"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/chatbot-backend.git"
   }
 }
