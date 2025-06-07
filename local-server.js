@@ -6,7 +6,7 @@ const helmet = require('helmet');
 require('dotenv').config();
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3002; // Updated to match your deployment
 
 // Security middleware
 app.use(helmet({
@@ -22,16 +22,20 @@ const limiter = rateLimit({
 });
 app.use('/api/', limiter);
 
-// CORS configuration
+// CORS configuration - Updated to fix CORS issues
 const corsOptions = {
   origin: [
     'http://localhost:3000',
     'http://localhost:3001',
+    'http://127.0.0.1:3000',
+    'https://cr8-agency.netlify.app', // Your actual frontend URL
     'https://your-netlify-app.netlify.app', // Replace with your actual Netlify URL
     process.env.FRONTEND_URL
   ].filter(Boolean),
   credentials: true,
-  optionsSuccessStatus: 200
+  optionsSuccessStatus: 200,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 };
 app.use(cors(corsOptions));
 
@@ -49,38 +53,54 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Training data endpoint
+// Training data endpoint - Updated with CR8 specific data
 app.get('/api/training-data', (req, res) => {
   const trainingData = `
-# Chatbot Training Data
+# CR8 Digital Creative Agency - Training Data
 
-## About This Assistant
-You are a helpful AI assistant designed to provide friendly, informative, and engaging conversations. You have access to general knowledge and can help with various topics including:
+## About CR8
+CR8 is a digital creative agency that helps clients bring their creative vision to life through graphic design, video editing, animation, and motion graphics.
 
-- General questions and information
-- Programming and technical help
-- Creative writing and brainstorming
-- Problem-solving assistance
-- Casual conversation
+**Tagline**: Let's Create & Unleash Your Creative Vision.
+
+## Contact Information
+- Email: creativscr8@gmail.com
+- Alternative Email: eldriv@proton.me
+- Portfolio: https://cr8-agency.netlify.app/#works
+
+## Services Offered
+- Graphic Design
+- Video Editing
+- Motion Graphics
+- Animation
+- Logo Animation
+
+## Target Audience
+We serve clients who need visual storytelling and branding services. Our goal is to bring your vision to life with creative execution.
+
+## Service Packages
+### LOE 1: Basic Short Form Video (30s–1m), Basic Long Form Video (5m–10m), Basic Motion Graphic Elements
+### LOE 2: Short Form Video (30s–1m), Long Form Video (5m–20m), Motion Graphics with Intro Animation
+### LOE 3: Advanced Video Editing with VFX, Template Creation, Full Motion Graphics
+
+## Why Brands Trust CR8
+- Uphold the highest quality standards
+- Align projects with brand identity
+- Stay current with industry trends
+
+## Production Process
+1. Understanding Your Brand
+2. Drafting Storyboard (24–48 hours)
+3. Production (12–72 hours)
+4. Client Approval
+5. Revision
 
 ## Personality Guidelines
-- Be friendly, helpful, and professional
-- Provide clear and concise answers
+- Be friendly, creative, and professional
+- Provide clear and engaging answers
+- Focus on visual storytelling and creative solutions
 - Ask clarifying questions when needed
-- Admit when you don't know something
-- Be encouraging and supportive
-
-## Response Guidelines
-- Keep responses conversational and engaging
-- Use examples when helpful
-- Break down complex topics into simpler parts
-- Offer follow-up suggestions when appropriate
-- Maintain a positive and helpful tone
-
-## Conversation Starters
-- "Hello! How can I help you today?"
-- "I'm here to assist with any questions you might have."
-- "What would you like to know or discuss?"
+- Be encouraging and supportive of creative endeavors
 `;
 
   res.json({ 
@@ -89,7 +109,7 @@ You are a helpful AI assistant designed to provide friendly, informative, and en
   });
 });
 
-// Main chat endpoint - Using Hugging Face as example
+// Main chat endpoint - Using Gemini API
 app.post('/api/chat', async (req, res) => {
   try {
     const { prompt } = req.body;
@@ -108,74 +128,46 @@ app.post('/api/chat', async (req, res) => {
       ip: req.ip
     });
 
-    // Option 1: Use Hugging Face Inference API (Free tier available)
-    if (process.env.HUGGINGFACE_API_KEY) {
+    // Use Gemini API
+    if (process.env.GEMINI_API_KEY) {
       try {
-        const response = await fetch('https://api-inference.huggingface.co/models/microsoft/DialoGPT-medium', {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${process.env.GEMINI_API_KEY}`, {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            inputs: prompt,
-            parameters: {
-              max_length: 500,
+            contents: [{
+              parts: [{
+                text: `You are a helpful AI assistant for CR8 Digital Creative Agency. CR8 specializes in graphic design, video editing, animation, and motion graphics. Our tagline is "Let's Create & Unleash Your Creative Vision."
+
+Key services:
+- Graphic Design
+- Video Editing  
+- Motion Graphics
+- Animation
+- Logo Animation
+
+Contact: creativscr8@gmail.com
+Portfolio: https://cr8-agency.netlify.app/#works
+
+Be friendly, creative, and professional. Focus on visual storytelling and creative solutions.
+
+User message: ${prompt}`
+              }]
+            }],
+            generationConfig: {
               temperature: 0.7,
-              do_sample: true,
-              top_p: 0.9
+              topK: 40,
+              topP: 0.95,
+              maxOutputTokens: 1024,
             }
           })
         });
 
         if (response.ok) {
           const data = await response.json();
-          const aiResponse = data.generated_text || data[0]?.generated_text || "I'm here to help! Could you please rephrase your question?";
-          
-          return res.json({
-            candidates: [{
-              content: {
-                parts: [{
-                  text: aiResponse.replace(prompt, '').trim() || "I'm ready to assist you with any questions!"
-                }]
-              }
-            }]
-          });
-        }
-      } catch (error) {
-        console.error('Hugging Face API error:', error);
-      }
-    }
-
-    // Option 2: Use OpenAI API (if available)
-    if (process.env.OPENAI_API_KEY) {
-      try {
-        const response = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            model: 'gpt-3.5-turbo',
-            messages: [
-              {
-                role: 'system',
-                content: 'You are a helpful, friendly AI assistant. Provide clear, concise, and helpful responses.'
-              },
-              {
-                role: 'user',
-                content: prompt
-              }
-            ],
-            max_tokens: 500,
-            temperature: 0.7
-          })
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          const aiResponse = data.choices?.[0]?.message?.content || "I'm here to help! How can I assist you?";
+          const aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || "I'm here to help with your creative needs! How can CR8 assist you today?";
           
           return res.json({
             candidates: [{
@@ -186,14 +178,17 @@ app.post('/api/chat', async (req, res) => {
               }
             }]
           });
+        } else {
+          const errorData = await response.text();
+          console.error('Gemini API error:', response.status, errorData);
         }
       } catch (error) {
-        console.error('OpenAI API error:', error);
+        console.error('Gemini API error:', error);
       }
     }
 
-    // Fallback: Rule-based responses
-    const fallbackResponse = generateFallbackResponse(prompt);
+    // Fallback: Rule-based responses with CR8 context
+    const fallbackResponse = generateCR8FallbackResponse(prompt);
     res.json({
       candidates: [{
         content: {
@@ -213,57 +208,57 @@ app.post('/api/chat', async (req, res) => {
   }
 });
 
-// Fallback response generator
-function generateFallbackResponse(prompt) {
+// CR8-specific fallback response generator
+function generateCR8FallbackResponse(prompt) {
   const lowerPrompt = prompt.toLowerCase();
   
   // Greeting responses
   if (lowerPrompt.includes('hello') || lowerPrompt.includes('hi') || lowerPrompt.includes('hey')) {
-    return "Hello! I'm your AI assistant. How can I help you today?";
+    return "Hello! Welcome to CR8 Digital Creative Agency. I'm here to help you unleash your creative vision! How can I assist you with your creative projects today?";
   }
   
-  // How are you responses
-  if (lowerPrompt.includes('how are you')) {
-    return "I'm doing well, thank you for asking! I'm here and ready to help you with any questions or tasks you might have.";
+  // Services related
+  if (lowerPrompt.includes('service') || lowerPrompt.includes('what do you do')) {
+    return "CR8 offers a full range of creative services including Graphic Design, Video Editing, Motion Graphics, Animation, and Logo Animation. We help bring your creative vision to life! Which service interests you?";
   }
   
-  // Help responses
-  if (lowerPrompt.includes('help')) {
-    return "I'm here to help! I can assist you with various tasks like answering questions, providing information, helping with problem-solving, or just having a friendly conversation. What would you like to know?";
+  // Pricing/packages
+  if (lowerPrompt.includes('price') || lowerPrompt.includes('cost') || lowerPrompt.includes('package')) {
+    return "We offer three main service levels: LOE 1 (Basic), LOE 2 (Standard), and LOE 3 (Advanced). Each package is tailored to different project needs and budgets. Would you like me to explain the details of each package?";
   }
   
-  // Programming related
-  if (lowerPrompt.includes('code') || lowerPrompt.includes('programming') || lowerPrompt.includes('javascript') || lowerPrompt.includes('python')) {
-    return "I'd be happy to help you with programming! Whether you need help with debugging, learning new concepts, or code reviews, I'm here to assist. What specific programming question do you have?";
+  // Contact related
+  if (lowerPrompt.includes('contact') || lowerPrompt.includes('email') || lowerPrompt.includes('reach')) {
+    return "You can reach CR8 at creativscr8@gmail.com or check out our portfolio at https://cr8-agency.netlify.app/#works. We'd love to hear about your creative project!";
   }
   
-  // Weather (since we can't access real weather data)
-  if (lowerPrompt.includes('weather')) {
-    return "I don't have access to real-time weather data, but I'd recommend checking a reliable weather service like Weather.com or your local weather app for accurate, up-to-date information.";
+  // Portfolio/work
+  if (lowerPrompt.includes('portfolio') || lowerPrompt.includes('work') || lowerPrompt.includes('example')) {
+    return "Check out our creative work at https://cr8-agency.netlify.app/#works! We've worked on various projects including video editing, motion graphics, and brand animations. What type of creative work are you interested in?";
   }
   
-  // Time related
-  if (lowerPrompt.includes('time') || lowerPrompt.includes('date')) {
-    return `The current server time is ${new Date().toLocaleString()}. Is there something specific about time or dates you'd like to know?`;
+  // Process related
+  if (lowerPrompt.includes('process') || lowerPrompt.includes('how') || lowerPrompt.includes('work')) {
+    return "Our creative process includes: 1) Understanding Your Brand, 2) Drafting Storyboard (24-48 hours), 3) Production (12-72 hours), 4) Client Approval, 5) Revision. We ensure your vision comes to life perfectly!";
   }
   
-  // Goodbye responses
-  if (lowerPrompt.includes('bye') || lowerPrompt.includes('goodbye') || lowerPrompt.includes('see you')) {
-    return "Goodbye! It was nice chatting with you. Feel free to come back anytime if you have more questions!";
+  // Video editing
+  if (lowerPrompt.includes('video') || lowerPrompt.includes('edit')) {
+    return "CR8 specializes in both short-form (30s-1m) and long-form (5m-20m) video editing. We offer everything from basic editing to advanced VFX and template creation. What kind of video project do you have in mind?";
   }
   
-  // Thank you responses
-  if (lowerPrompt.includes('thank')) {
-    return "You're welcome! I'm glad I could help. Is there anything else you'd like to know?";
+  // Motion graphics/animation
+  if (lowerPrompt.includes('motion') || lowerPrompt.includes('animation') || lowerPrompt.includes('graphic')) {
+    return "We create stunning motion graphics and animations that bring brands to life! From basic motion elements to full intro animations and logo animations. What's your creative vision?";
   }
   
-  // Default response
+  // Default creative response
   const defaultResponses = [
-    "That's an interesting question! Could you provide a bit more context so I can give you a more helpful response?",
-    "I'd be happy to help you with that! Can you tell me a bit more about what you're looking for?",
-    "Thanks for your message! I'm here to assist you. Could you elaborate on what you'd like to know?",
-    "I'm ready to help! Could you provide some more details about your question?",
-    "That's a great topic to discuss! What specific aspect would you like to explore?"
+    "That's an exciting creative challenge! At CR8, we love bringing unique visions to life. Could you tell me more about your project?",
+    "I'd love to help you with that! CR8 specializes in turning creative ideas into reality. What specific aspect would you like to explore?",
+    "Great question! As your CR8 creative assistant, I'm here to help unleash your creative potential. Can you provide more details?",
+    "Let's create something amazing together! What creative project or question can I help you with?",
+    "CR8 is all about bringing your vision to life! Could you elaborate on what you're looking to create?"
   ];
   
   return defaultResponses[Math.floor(Math.random() * defaultResponses.length)];
@@ -287,18 +282,20 @@ app.use('*', (req, res) => {
 });
 
 // Start server
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
   console.log(`💬 Chat endpoint: http://localhost:${PORT}/api/chat`);
   console.log(`📚 Training data: http://localhost:${PORT}/api/training-data`);
+  console.log(' ');
   
   // Log environment info
-  console.log('\n📋 Environment:');
+  console.log('📋 Environment:');
   console.log(`- Node.js: ${process.version}`);
-  console.log(`- Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`- Environment: ${process.env.NODE_ENV || 'production'}`);
   console.log(`- OpenAI API: ${process.env.OPENAI_API_KEY ? '✅ Configured' : '❌ Not configured'}`);
   console.log(`- Hugging Face API: ${process.env.HUGGINGFACE_API_KEY ? '✅ Configured' : '❌ Not configured'}`);
+  console.log(`- Gemini API: ${process.env.GEMINI_API_KEY ? '✅ Configured' : '❌ Not configured'}`);
 });
 
 // Graceful shutdown
