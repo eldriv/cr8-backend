@@ -72,7 +72,8 @@ const corsOptions = {
     'X-Requested-With', 
     'Accept', 
     'Origin',
-    'Access-Control-Allow-Origin'
+    'Access-Control-Allow-Origin',
+    'Cache-Control'
   ],
   credentials: true,
   optionsSuccessStatus: 200,
@@ -211,9 +212,8 @@ Brands trust CR8 because we:
 - Stay current with industry trends
 Web Developer and Software Engineer of CR8: Eldriv | Michael Adrian A. Villareal`;
 
-  // Return as plain text to match frontend expectation
-  res.setHeader('Content-Type', 'text/plain');
-  res.send(trainingData);
+  // Return as JSON to avoid CORS issues
+  res.json({ trainingData });
 });
 
 // Version endpoint
@@ -265,10 +265,12 @@ You can contact us at creativscr8@gmail.com or eldriv@proton.me, and view our po
 If you have questions about CR8's creative services, production process, or packages, feel free to ask!`;
     }
 
-    // Return response as plain text (this is what your frontend expects)
+    // Return response as JSON (to match frontend expectation)
     console.log('✅ Sending response, length:', response.length);
-    res.setHeader('Content-Type', 'text/plain');
-    res.send(response);
+    res.json({ 
+      response: response,
+      timestamp: new Date().toISOString()
+    });
 
   } catch (error) {
     console.error('❌ Error in Gemini endpoint:', error);
