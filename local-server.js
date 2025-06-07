@@ -6,7 +6,7 @@ const helmet = require('helmet');
 require('dotenv').config();
 
 const app = express();
-const PORT = process.env.PORT || 3002; // Updated to match your deployment
+const PORT = process.env.PORT || 3001;
 
 // Security middleware
 app.use(helmet({
@@ -22,20 +22,17 @@ const limiter = rateLimit({
 });
 app.use('/api/', limiter);
 
-// CORS configuration - Updated to fix CORS issues
+// CORS configuration
 const corsOptions = {
   origin: [
     'http://localhost:3000',
     'http://localhost:3001',
-    'http://127.0.0.1:3000',
-    'https://cr8-agency.netlify.app', // Your actual frontend URL
-    'https://your-netlify-app.netlify.app', // Replace with your actual Netlify URL
-    process.env.FRONTEND_URL
+    'https://cr8-agency.netlify.app',
+    process.env.FRONTEND_URL,
+    ...(process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : [])
   ].filter(Boolean),
   credentials: true,
-  optionsSuccessStatus: 200,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+  optionsSuccessStatus: 200
 };
 app.use(cors(corsOptions));
 
@@ -53,10 +50,10 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Training data endpoint - Updated with CR8 specific data
+// Training data endpoint
 app.get('/api/training-data', (req, res) => {
-  const trainingData = `
-# CR8 Digital Creative Agency - Training Data
+  const trainingData = process.env.REACT_APP_TRAINING_DATA || `
+# CR8 Digital Creative Agency - AI Assistant Training Data
 
 ## About CR8
 CR8 is a digital creative agency that helps clients bring their creative vision to life through graphic design, video editing, animation, and motion graphics.
@@ -78,29 +75,44 @@ CR8 is a digital creative agency that helps clients bring their creative vision 
 ## Target Audience
 We serve clients who need visual storytelling and branding services. Our goal is to bring your vision to life with creative execution.
 
+## Production Process
+1. **Understanding Your Brand** – We exchange ideas to align with your vision
+2. **Drafting Storyboard (24–48 hours)** – We prepare and finalize a storyboard; changes during production may incur fees
+3. **Production (12–72 hours)** – Our team executes and reviews the project based on the approved storyboard
+4. **Client Approval** – Feedback is collected through Frame.io, with support available
+5. **Revision** – Revisions are made based on feedback. After 3 rounds, extra fees may apply
+
 ## Service Packages
-### LOE 1: Basic Short Form Video (30s–1m), Basic Long Form Video (5m–10m), Basic Motion Graphic Elements
-### LOE 2: Short Form Video (30s–1m), Long Form Video (5m–20m), Motion Graphics with Intro Animation
-### LOE 3: Advanced Video Editing with VFX, Template Creation, Full Motion Graphics
+
+### LOE 1 Package
+- Basic Short Form Video (30s–1m)
+- Basic Long Form Video (5m–10m)
+- Basic Motion Graphic Elements (Lower Thirds)
+
+### LOE 2 Package
+- Short Form Video (30s–1m)
+- Long Form Video (5m–20m)
+- Motion Graphics (Lower Thirds, Intro Animation, Logo Animation)
+
+### LOE 3 Package
+- Advanced Video Editing with VFX
+- Template Creation
+- Full Motion Graphics (Lower Thirds, Intro Animation, Logo Animation)
+
+### Custom Packages
+Yes! You can choose any combination of services from our packages to create a customized solution based on your needs.
 
 ## Why Brands Trust CR8
 - Uphold the highest quality standards
 - Align projects with brand identity
 - Stay current with industry trends
 
-## Production Process
-1. Understanding Your Brand
-2. Drafting Storyboard (24–48 hours)
-3. Production (12–72 hours)
-4. Client Approval
-5. Revision
-
 ## Personality Guidelines
-- Be friendly, creative, and professional
-- Provide clear and engaging answers
-- Focus on visual storytelling and creative solutions
-- Ask clarifying questions when needed
-- Be encouraging and supportive of creative endeavors
+- Be enthusiastic about creative projects
+- Highlight CR8's expertise and quality
+- Always mention relevant services when appropriate
+- Be professional yet creative in responses
+- Encourage potential clients to reach out
 `;
 
   res.json({ 
@@ -109,7 +121,84 @@ We serve clients who need visual storytelling and branding services. Our goal is
   });
 });
 
-// Main chat endpoint - Using Gemini API
+// Enhanced system prompt function
+const getCR8SystemPrompt = () => `You are an AI assistant for CR8 Digital Creative Agency, a professional creative agency specializing in bringing clients' visions to life.
+
+## About CR8
+- **Mission**: Help clients unleash their creative vision through professional visual storytelling
+- **Tagline**: "Let's Create & Unleash Your Creative Vision"
+- **Specialties**: Graphic Design, Video Editing, Motion Graphics, Animation, Logo Animation
+
+## Contact Information
+- Primary Email: creativscr8@gmail.com
+- Alternative Email: eldriv@proton.me  
+- Portfolio: https://cr8-agency.netlify.app/#works
+
+## Service Packages
+**LOE 1 (Basic)**: Short Form Video (30s–1m), Long Form Video (5m–10m), Basic Motion Graphics
+**LOE 2 (Standard)**: Short Form Video (30s–1m), Long Form Video (5m–20m), Motion Graphics with Intro Animation
+**LOE 3 (Advanced)**: Advanced Video Editing with VFX, Template Creation, Full Motion Graphics
+
+## Creative Process
+1. Understanding Your Brand (discovery phase)
+2. Drafting Storyboard (24–48 hours)
+3. Production (12–72 hours) 
+4. Client Approval
+5. Revision (if needed)
+
+## Your Role & Personality
+- Be enthusiastic, creative, and professional
+- Focus on understanding the client's creative vision
+- Ask clarifying questions about projects
+- Provide specific, actionable advice
+- Reference CR8's capabilities naturally
+- Be encouraging and supportive of creative endeavors
+- Avoid being overly promotional - focus on being helpful
+
+## Response Guidelines
+- Keep responses conversational and engaging
+- Ask follow-up questions to better understand projects
+- Provide specific examples when relevant
+- Reference the appropriate service level (LOE 1-3) when discussing projects
+- Always maintain a creative, professional tone
+- Vary your responses to avoid repetition
+
+Please respond as the CR8 assistant, keeping your responses natural and helpful.`;
+
+// Fallback response generator
+const generateEnhancedCR8Response = (prompt) => {
+  const lowerPrompt = prompt.toLowerCase();
+  
+  // Greeting responses
+  if (lowerPrompt.includes('hello') || lowerPrompt.includes('hi') || lowerPrompt.includes('hey')) {
+    return "Hello! Welcome to CR8 Digital Creative Agency! 🎨 I'm here to help you unleash your creative vision. Whether you're looking for video editing, motion graphics, animation, or logo design, we've got you covered. What creative project are you thinking about?";
+  }
+  
+  // Services inquiry
+  if (lowerPrompt.includes('service') || lowerPrompt.includes('what do you do') || lowerPrompt.includes('help')) {
+    return "At CR8, we specialize in bringing your creative vision to life! Our services include:\n\n🎬 Video Editing (Short & Long Form)\n🎨 Motion Graphics & Animation\n✨ Logo Animation\n🎯 Graphic Design\n\nWe offer three service levels:\n• LOE 1: Basic projects (30s-1m videos, basic motion graphics)\n• LOE 2: Standard projects (up to 20m videos, intro animations)\n• LOE 3: Advanced projects (VFX, templates, full motion graphics)\n\nWhat type of project did you have in mind?";
+  }
+  
+  // Pricing inquiry
+  if (lowerPrompt.includes('price') || lowerPrompt.includes('cost') || lowerPrompt.includes('package')) {
+    return "Great question! Our pricing varies based on the complexity and scope of your project. We offer three main service levels (LOE 1-3) and custom packages to fit your specific needs.\n\nTo give you the most accurate quote, I'd love to learn more about your project:\n• What type of video/graphics do you need?\n• How long should the final product be?\n• Do you need motion graphics or special effects?\n\nFeel free to email us at creativscr8@gmail.com for a detailed quote!";
+  }
+  
+  // Contact inquiry
+  if (lowerPrompt.includes('contact') || lowerPrompt.includes('email') || lowerPrompt.includes('reach')) {
+    return "You can reach us at:\n📧 creativscr8@gmail.com (primary)\n📧 eldriv@proton.me (alternative)\n\n🌐 Check out our portfolio: https://cr8-agency.netlify.app/#works\n\nWe typically respond within 24 hours and would love to discuss your creative project!";
+  }
+  
+  // Process inquiry
+  if (lowerPrompt.includes('process') || lowerPrompt.includes('how do you work') || lowerPrompt.includes('workflow')) {
+    return "Our creative process is designed to bring your vision to life efficiently:\n\n1. **Understanding Your Brand** - We dive deep into your vision and goals\n2. **Drafting Storyboard** (24-48 hours) - We create a visual roadmap\n3. **Production** (12-72 hours) - Our team works their magic\n4. **Client Approval** - We gather your feedback through Frame.io\n5. **Revision** - We perfect it based on your input\n\nThis process ensures we align with your brand and deliver exactly what you envision!";
+  }
+  
+  // Default response
+  return "Thanks for reaching out to CR8! 🎨 We're passionate about helping bring creative visions to life through video editing, motion graphics, and animation.\n\nI'd love to learn more about your project! Whether you need a short promotional video, logo animation, or complex motion graphics, we have the expertise to make it happen.\n\nWhat creative challenge can we help you solve today?";
+};
+
+// Main chat endpoint - Fixed version
 app.post('/api/chat', async (req, res) => {
   try {
     const { prompt } = req.body;
@@ -121,148 +210,258 @@ app.post('/api/chat', async (req, res) => {
       });
     }
 
-    // Log the incoming request
-    console.log('Chat request received:', {
-      timestamp: new Date().toISOString(),
-      promptLength: prompt.length,
-      ip: req.ip
-    });
+    console.log('=== CHAT REQUEST DEBUG ===');
+    console.log('Timestamp:', new Date().toISOString());
+    console.log('Prompt length:', prompt.length);
+    console.log('Prompt preview:', prompt.substring(0, 200) + (prompt.length > 200 ? '...' : ''));
+    console.log('Gemini API Key configured:', !!process.env.GEMINI_API_KEY);
 
-    // Use Gemini API
-    if (process.env.GEMINI_API_KEY) {
-      try {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${process.env.GEMINI_API_KEY}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
+    // Validate API key
+    if (!process.env.GEMINI_API_KEY) {
+      console.log('❌ No Gemini API key found - using fallback');
+      const fallbackResponse = generateEnhancedCR8Response(prompt);
+      return res.json({
+        candidates: [{
+          content: {
+            parts: [{
+              text: fallbackResponse
+            }]
+          }
+        }],
+        source: 'fallback',
+        reason: 'no_api_key'
+      });
+    }
+
+    // Validate API key format
+    if (!process.env.GEMINI_API_KEY.startsWith('AIza')) {
+      console.log('❌ Invalid Gemini API key format - should start with "AIza"');
+      const fallbackResponse = generateEnhancedCR8Response(prompt);
+      return res.json({
+        candidates: [{
+          content: {
+            parts: [{
+              text: fallbackResponse
+            }]
+          }
+        }],
+        source: 'fallback',
+        reason: 'invalid_api_key_format'
+      });
+    }
+
+    // Try Gemini API
+    try {
+      console.log('🔄 Attempting Gemini API call...');
+      
+      const systemPrompt = getCR8SystemPrompt();
+      const fullPrompt = `${systemPrompt}\n\nUser: ${prompt}\n\nCR8 Assistant:`;
+      
+      const requestBody = {
+        contents: [{
+          parts: [{
+            text: fullPrompt
+          }]
+        }],
+        generationConfig: {
+          temperature: 0.8,
+          topK: 40,
+          topP: 0.95,
+          maxOutputTokens: 1024,
+          stopSequences: ["User:", "Human:"]
+        },
+        safetySettings: [
+          {
+            category: "HARM_CATEGORY_HARASSMENT",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE"
           },
-          body: JSON.stringify({
-            contents: [{
+          {
+            category: "HARM_CATEGORY_HATE_SPEECH", 
+            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+          },
+          {
+            category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+          },
+          {
+            category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+          }
+        ]
+      };
+
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${process.env.GEMINI_API_KEY}`;
+      
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      console.log('✅ Gemini API response received');
+      console.log('Response status:', response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.log('❌ Gemini API Error Response:', errorText);
+        
+        let errorReason = 'api_error';
+        if (response.status === 400) errorReason = 'bad_request';
+        else if (response.status === 401) errorReason = 'invalid_api_key';
+        else if (response.status === 403) errorReason = 'forbidden';
+        else if (response.status === 429) errorReason = 'rate_limited';
+        else if (response.status >= 500) errorReason = 'server_error';
+
+        const fallbackResponse = generateEnhancedCR8Response(prompt);
+        return res.json({
+          candidates: [{
+            content: {
               parts: [{
-                text: `You are a helpful AI assistant for CR8 Digital Creative Agency. CR8 specializes in graphic design, video editing, animation, and motion graphics. Our tagline is "Let's Create & Unleash Your Creative Vision."
-
-Key services:
-- Graphic Design
-- Video Editing  
-- Motion Graphics
-- Animation
-- Logo Animation
-
-Contact: creativscr8@gmail.com
-Portfolio: https://cr8-agency.netlify.app/#works
-
-Be friendly, creative, and professional. Focus on visual storytelling and creative solutions.
-
-User message: ${prompt}`
+                text: fallbackResponse
               }]
-            }],
-            generationConfig: {
-              temperature: 0.7,
-              topK: 40,
-              topP: 0.95,
-              maxOutputTokens: 1024,
             }
-          })
+          }],
+          source: 'fallback',
+          reason: errorReason,
+          error: errorText
         });
+      }
 
-        if (response.ok) {
-          const data = await response.json();
-          const aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || "I'm here to help with your creative needs! How can CR8 assist you today?";
-          
+      const data = await response.json();
+      const aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      
+      if (!aiResponse || !aiResponse.trim()) {
+        console.log('❌ Empty or invalid response from Gemini API');
+        
+        if (data.candidates?.[0]?.finishReason === 'SAFETY') {
+          console.log('Response blocked by safety filters');
+          const fallbackResponse = generateEnhancedCR8Response(prompt);
           return res.json({
             candidates: [{
               content: {
                 parts: [{
-                  text: aiResponse
+                  text: fallbackResponse
                 }]
               }
-            }]
+            }],
+            source: 'fallback',
+            reason: 'safety_blocked'
           });
-        } else {
-          const errorData = await response.text();
-          console.error('Gemini API error:', response.status, errorData);
         }
-      } catch (error) {
-        console.error('Gemini API error:', error);
+        
+        const fallbackResponse = generateEnhancedCR8Response(prompt);
+        return res.json({
+          candidates: [{
+            content: {
+              parts: [{
+                text: fallbackResponse
+              }]
+            }
+          }],
+          source: 'fallback',
+          reason: 'empty_response'
+        });
       }
+
+      console.log('✅ Successful Gemini response received');
+      console.log('Response length:', aiResponse.length);
+      
+      return res.json({
+        candidates: [{
+          content: {
+            parts: [{
+              text: aiResponse.trim()
+            }]
+          }
+        }],
+        source: 'gemini'
+      });
+
+    } catch (apiError) {
+      console.log('❌ Gemini API Request Failed');
+      console.log('Error message:', apiError.message);
+      
+      let errorReason = 'network_error';
+      if (apiError.message.includes('timeout')) {
+        errorReason = 'timeout';
+      } else if (apiError.message.includes('ENOTFOUND')) {
+        errorReason = 'network_error';
+      }
+      
+      const fallbackResponse = generateEnhancedCR8Response(prompt);
+      return res.json({
+        candidates: [{
+          content: {
+            parts: [{
+              text: fallbackResponse
+            }]
+          }
+        }],
+        source: 'fallback',
+        reason: errorReason,
+        error: apiError.message
+      });
     }
 
-    // Fallback: Rule-based responses with CR8 context
-    const fallbackResponse = generateCR8FallbackResponse(prompt);
-    res.json({
-      candidates: [{
-        content: {
-          parts: [{
-            text: fallbackResponse
-          }]
-        }
-      }]
-    });
-
   } catch (error) {
-    console.error('Chat endpoint error:', error);
+    console.log('❌ CRITICAL ERROR in chat endpoint');
+    console.log('Error:', error);
     res.status(500).json({ 
       error: 'Internal server error',
-      message: 'Something went wrong processing your request'
+      message: 'Something went wrong processing your request',
+      details: error.message
     });
   }
 });
 
-// CR8-specific fallback response generator
-function generateCR8FallbackResponse(prompt) {
-  const lowerPrompt = prompt.toLowerCase();
-  
-  // Greeting responses
-  if (lowerPrompt.includes('hello') || lowerPrompt.includes('hi') || lowerPrompt.includes('hey')) {
-    return "Hello! Welcome to CR8 Digital Creative Agency. I'm here to help you unleash your creative vision! How can I assist you with your creative projects today?";
+// Test endpoint for debugging
+app.get('/api/test-gemini', async (req, res) => {
+  try {
+    console.log('=== GEMINI API TEST ===');
+    console.log('API Key configured:', !!process.env.GEMINI_API_KEY);
+    console.log('API Key format valid:', process.env.GEMINI_API_KEY?.startsWith('AIza'));
+    
+    if (!process.env.GEMINI_API_KEY) {
+      return res.json({
+        status: 'error',
+        message: 'No API key configured',
+        solution: 'Add GEMINI_API_KEY to your .env file'
+      });
+    }
+
+    const testPrompt = "Hello, this is a test message.";
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${process.env.GEMINI_API_KEY}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{
+            text: testPrompt
+          }]
+        }]
+      })
+    });
+
+    const responseText = await response.text();
+    
+    res.json({
+      status: response.ok ? 'success' : 'error',
+      statusCode: response.status,
+      response: response.ok ? JSON.parse(responseText) : responseText
+    });
+
+  } catch (error) {
+    res.json({
+      status: 'error',
+      message: error.message,
+      type: error.constructor.name
+    });
   }
-  
-  // Services related
-  if (lowerPrompt.includes('service') || lowerPrompt.includes('what do you do')) {
-    return "CR8 offers a full range of creative services including Graphic Design, Video Editing, Motion Graphics, Animation, and Logo Animation. We help bring your creative vision to life! Which service interests you?";
-  }
-  
-  // Pricing/packages
-  if (lowerPrompt.includes('price') || lowerPrompt.includes('cost') || lowerPrompt.includes('package')) {
-    return "We offer three main service levels: LOE 1 (Basic), LOE 2 (Standard), and LOE 3 (Advanced). Each package is tailored to different project needs and budgets. Would you like me to explain the details of each package?";
-  }
-  
-  // Contact related
-  if (lowerPrompt.includes('contact') || lowerPrompt.includes('email') || lowerPrompt.includes('reach')) {
-    return "You can reach CR8 at creativscr8@gmail.com or check out our portfolio at https://cr8-agency.netlify.app/#works. We'd love to hear about your creative project!";
-  }
-  
-  // Portfolio/work
-  if (lowerPrompt.includes('portfolio') || lowerPrompt.includes('work') || lowerPrompt.includes('example')) {
-    return "Check out our creative work at https://cr8-agency.netlify.app/#works! We've worked on various projects including video editing, motion graphics, and brand animations. What type of creative work are you interested in?";
-  }
-  
-  // Process related
-  if (lowerPrompt.includes('process') || lowerPrompt.includes('how') || lowerPrompt.includes('work')) {
-    return "Our creative process includes: 1) Understanding Your Brand, 2) Drafting Storyboard (24-48 hours), 3) Production (12-72 hours), 4) Client Approval, 5) Revision. We ensure your vision comes to life perfectly!";
-  }
-  
-  // Video editing
-  if (lowerPrompt.includes('video') || lowerPrompt.includes('edit')) {
-    return "CR8 specializes in both short-form (30s-1m) and long-form (5m-20m) video editing. We offer everything from basic editing to advanced VFX and template creation. What kind of video project do you have in mind?";
-  }
-  
-  // Motion graphics/animation
-  if (lowerPrompt.includes('motion') || lowerPrompt.includes('animation') || lowerPrompt.includes('graphic')) {
-    return "We create stunning motion graphics and animations that bring brands to life! From basic motion elements to full intro animations and logo animations. What's your creative vision?";
-  }
-  
-  // Default creative response
-  const defaultResponses = [
-    "That's an exciting creative challenge! At CR8, we love bringing unique visions to life. Could you tell me more about your project?",
-    "I'd love to help you with that! CR8 specializes in turning creative ideas into reality. What specific aspect would you like to explore?",
-    "Great question! As your CR8 creative assistant, I'm here to help unleash your creative potential. Can you provide more details?",
-    "Let's create something amazing together! What creative project or question can I help you with?",
-    "CR8 is all about bringing your vision to life! Could you elaborate on what you're looking to create?"
-  ];
-  
-  return defaultResponses[Math.floor(Math.random() * defaultResponses.length)];
-}
+});
 
 // Error handling middleware
 app.use((error, req, res, next) => {
@@ -282,20 +481,21 @@ app.use('*', (req, res) => {
 });
 
 // Start server
-app.listen(PORT, '0.0.0.0', () => {
+app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
   console.log(`💬 Chat endpoint: http://localhost:${PORT}/api/chat`);
+  console.log(`🧪 Test Gemini: http://localhost:${PORT}/api/test-gemini`);
   console.log(`📚 Training data: http://localhost:${PORT}/api/training-data`);
-  console.log(' ');
   
   // Log environment info
-  console.log('📋 Environment:');
+  console.log('\n📋 Environment:');
   console.log(`- Node.js: ${process.version}`);
-  console.log(`- Environment: ${process.env.NODE_ENV || 'production'}`);
-  console.log(`- OpenAI API: ${process.env.OPENAI_API_KEY ? '✅ Configured' : '❌ Not configured'}`);
-  console.log(`- Hugging Face API: ${process.env.HUGGINGFACE_API_KEY ? '✅ Configured' : '❌ Not configured'}`);
+  console.log(`- Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`- Port: ${PORT}`);
   console.log(`- Gemini API: ${process.env.GEMINI_API_KEY ? '✅ Configured' : '❌ Not configured'}`);
+  console.log(`- Frontend URL: ${process.env.FRONTEND_URL || 'Not set'}`);
+  console.log(`- Allowed Origins: ${process.env.ALLOWED_ORIGINS || 'Not set'}`);
 });
 
 // Graceful shutdown
