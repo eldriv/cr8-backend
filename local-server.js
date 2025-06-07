@@ -25,8 +25,7 @@ app.use('/api/', limiter);
 // CORS configuration
 const corsOptions = {
   origin: [
-    'http://localhost:3000',
-    'http://localhost:3001',
+    'http://localhost:3002',
     'https://cr8-agency.netlify.app',
     process.env.FRONTEND_URL,
     ...(process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : [])
