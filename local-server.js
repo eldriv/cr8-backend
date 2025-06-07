@@ -1,16 +1,29 @@
-// Updated backend configuration fixes
+// Complete backend server configuration
+const express = require('express');
+const cors = require('cors');
+const rateLimit = require('express-rate-limit');
 
-// 1. Fix PORT configuration in your backend
-const PORT = process.env.PORT || 10000; // Render typically uses port 10000
+// Initialize Express app
+const app = express();
 
-// 2. Update CORS configuration
+// Port configuration for Render
+const PORT = process.env.PORT || 10000;
+
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: { error: 'Too many requests, please try again later.' }
+});
+
+// CORS configuration
 const corsOptions = {
   origin: [
     'http://localhost:3000',
     'http://localhost:3001', 
     'http://localhost:3002',
     'https://cr8-agency.netlify.app',
-    'https://cr8-backend.onrender.com', // Add your own backend URL
+    'https://cr8-backend.onrender.com',
     process.env.FRONTEND_URL,
     ...(process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : [])
   ].filter(Boolean),
@@ -20,7 +33,76 @@ const corsOptions = {
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With']
 };
 
-// 3. Add root endpoint to handle base URL requests
+// Middleware
+app.use(cors(corsOptions));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(limiter);
+
+// Request logging
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+  next();
+});
+
+// CR8 System Prompt Function
+function getCR8SystemPrompt() {
+  return `You are CR8, an AI assistant for a creative agency. You are helpful, creative, professional, and knowledgeable about marketing, branding, design, and business strategy. You provide actionable insights and creative solutions while maintaining a friendly, approachable tone.
+
+Key traits:
+- Creative and innovative thinking
+- Professional yet approachable
+- Marketing and branding expertise
+- Solution-oriented responses
+- Clear, actionable advice`;
+}
+
+// Enhanced fallback response generator
+function generateEnhancedCR8Response(prompt) {
+  const responses = {
+    greeting: [
+      "Hello! I'm CR8, your creative agency assistant. How can I help you with your marketing, branding, or creative projects today?",
+      "Hi there! Welcome to CR8. I'm here to help you with all things creative and strategic. What can I assist you with?",
+      "Hey! CR8 here, ready to help you create something amazing. What's on your mind?"
+    ],
+    marketing: [
+      "Great marketing question! Let me share some strategic insights that could help elevate your approach...",
+      "Marketing is all about connecting with your audience. Here's what I'd recommend...",
+      "That's an excellent marketing challenge. Let's break it down strategically..."
+    ],
+    branding: [
+      "Branding is at the heart of what we do at CR8. Here's my take on your question...",
+      "Strong branding creates lasting connections. Let me help you think through this...",
+      "Your brand identity is crucial. Here's how I'd approach this..."
+    ],
+    default: [
+      "That's an interesting question! As your CR8 assistant, here's what I think...",
+      "Let me help you with that from a creative agency perspective...",
+      "Great question! Here's my professional take on this..."
+    ]
+  };
+
+  const lowerPrompt = prompt.toLowerCase();
+  let responseArray = responses.default;
+
+  if (lowerPrompt.includes('hello') || lowerPrompt.includes('hi') || lowerPrompt.includes('hey')) {
+    responseArray = responses.greeting;
+  } else if (lowerPrompt.includes('marketing') || lowerPrompt.includes('campaign') || lowerPrompt.includes('advertising')) {
+    responseArray = responses.marketing;
+  } else if (lowerPrompt.includes('brand') || lowerPrompt.includes('logo') || lowerPrompt.includes('identity')) {
+    responseArray = responses.branding;
+  }
+
+  const randomResponse = responseArray[Math.floor(Math.random() * responseArray.length)];
+  
+  return `${randomResponse}
+
+While I'm currently running on backup systems, I'm still here to provide creative insights and strategic guidance. Feel free to ask me about marketing strategies, brand development, creative campaigns, or any other agency-related topics!
+
+Is there a specific project or challenge you'd like to discuss?`;
+}
+
+// Root endpoint
 app.get('/', (req, res) => {
   res.json({ 
     message: 'CR8 Backend API is running',
@@ -29,13 +111,25 @@ app.get('/', (req, res) => {
       health: '/api/health',
       chat: '/api/chat',
       trainingData: '/api/training-data',
-      testGemini: '/api/test-gemini'
+      testGemini: '/api/test-gemini',
+      debug: '/api/debug'
     },
     timestamp: new Date().toISOString()
   });
 });
 
-// 4. Fix the chat endpoint error handling
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    memory: process.memoryUsage(),
+    version: process.version
+  });
+});
+
+// Chat endpoint with comprehensive error handling
 app.post('/api/chat', async (req, res) => {
   try {
     const { prompt } = req.body;
@@ -142,12 +236,10 @@ app.post('/api/chat', async (req, res) => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(requestBody),
-        timeout: 30000 // 30 second timeout
+        body: JSON.stringify(requestBody)
       });
 
       console.log('Gemini API response status:', response.status);
-      console.log('Gemini API response headers:', Object.fromEntries(response.headers.entries()));
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -178,15 +270,13 @@ app.post('/api/chat', async (req, res) => {
       const data = await response.json();
       console.log('Gemini API response structure:', {
         hasCandidates: !!data.candidates,
-        candidatesLength: data.candidates?.length || 0,
-        firstCandidate: data.candidates?.[0] ? Object.keys(data.candidates[0]) : null
+        candidatesLength: data.candidates?.length || 0
       });
 
       const aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
       
       if (!aiResponse || !aiResponse.trim()) {
         console.log('❌ Empty response from Gemini API');
-        console.log('Full response data:', JSON.stringify(data, null, 2));
         
         const fallbackResponse = generateEnhancedCR8Response(prompt);
         return res.json({
@@ -198,13 +288,11 @@ app.post('/api/chat', async (req, res) => {
             }
           }],
           source: 'fallback',
-          reason: 'empty_response',
-          debug: data
+          reason: 'empty_response'
         });
       }
 
       console.log('✅ Successful Gemini response');
-      console.log('Response preview:', aiResponse.substring(0, 100) + '...');
       
       return res.json({
         candidates: [{
@@ -222,8 +310,7 @@ app.post('/api/chat', async (req, res) => {
       console.log('❌ Gemini API Request Failed');
       console.log('Error details:', {
         name: apiError.name,
-        message: apiError.message,
-        stack: apiError.stack?.split('\n')[0]
+        message: apiError.message
       });
       
       const fallbackResponse = generateEnhancedCR8Response(prompt);
@@ -252,20 +339,83 @@ app.post('/api/chat', async (req, res) => {
   }
 });
 
-// 5. Add debugging endpoint to check environment
+// Test Gemini endpoint
+app.get('/api/test-gemini', async (req, res) => {
+  const apiKey = process.env.GEMINI_API_KEY;
+  
+  if (!apiKey) {
+    return res.json({
+      status: 'no_api_key',
+      message: 'No Gemini API key configured'
+    });
+  }
+
+  try {
+    const testUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`;
+    const response = await fetch(testUrl);
+    
+    if (response.ok) {
+      res.json({
+        status: 'success',
+        message: 'Gemini API key is working'
+      });
+    } else {
+      res.json({
+        status: 'error',
+        message: 'Gemini API key is invalid',
+        statusCode: response.status
+      });
+    }
+  } catch (error) {
+    res.json({
+      status: 'error',
+      message: 'Failed to test Gemini API',
+      error: error.message
+    });
+  }
+});
+
+// Training data endpoint
+app.get('/api/training-data', (req, res) => {
+  res.json({
+    message: 'Training data endpoint',
+    status: 'available',
+    description: 'This endpoint can be used to manage training data for the CR8 assistant'
+  });
+});
+
+// Debug endpoint
 app.get('/api/debug', (req, res) => {
   res.json({
-    environment: process.env.NODE_ENV,
+    environment: process.env.NODE_ENV || 'development',
     port: PORT,
     hasGeminiKey: !!process.env.GEMINI_API_KEY,
     geminiKeyFormat: process.env.GEMINI_API_KEY ? 
       (process.env.GEMINI_API_KEY.startsWith('AIza') ? 'valid' : 'invalid') : 'missing',
     cors: corsOptions.origin,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    nodeVersion: process.version,
+    platform: process.platform
   });
 });
 
-// 6. Better error logging
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({
+    error: 'Not Found',
+    message: `Route ${req.method} ${req.path} not found`,
+    availableEndpoints: [
+      'GET /',
+      'GET /api/health',
+      'POST /api/chat',
+      'GET /api/test-gemini',
+      'GET /api/training-data',
+      'GET /api/debug'
+    ]
+  });
+});
+
+// Global error handler
 app.use((error, req, res, next) => {
   console.error('=== UNHANDLED ERROR ===');
   console.error('URL:', req.url);
@@ -279,4 +429,24 @@ app.use((error, req, res, next) => {
     url: req.url,
     method: req.method
   });
+});
+
+// Start server
+app.listen(PORT, () => {
+  console.log(`🚀 CR8 Backend Server running on port ${PORT}`);
+  console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🔑 Gemini API: ${process.env.GEMINI_API_KEY ? 'Configured' : 'Not configured'}`);
+  console.log(`🌐 CORS Origins:`, corsOptions.origin);
+  console.log(`⏰ Started at: ${new Date().toISOString()}`);
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('🛑 SIGTERM received, shutting down gracefully');
+  process.exit(0);
+});
+
+process.on('SIGINT', () => {
+  console.log('🛑 SIGINT received, shutting down gracefully');
+  process.exit(0);
 });
