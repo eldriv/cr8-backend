@@ -1,4 +1,4 @@
-// Fixed local-server.js - Aligned with config.js
+// local-server.js - Aligned with config.js
 const express = require('express');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
@@ -6,26 +6,25 @@ const rateLimit = require('express-rate-limit');
 // Initialize Express app
 const app = express();
 
-// FIXED: Port configuration to match config.js (10000, not 3002)
+// Port configuration
 const PORT = process.env.PORT || 10000;
 
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
+  max: 100,
   message: { error: 'Too many requests, please try again later.' }
 });
 
-// CORS configuration - aligned with config.js expectations
+// CORS configuration
 const corsOptions = {
   origin: [
     'http://localhost:3000',
-    'http://localhost:3001', 
+    'http://localhost:3001',
     'http://localhost:3002',
-    'http://localhost:10000', // ADDED: Match the server port
+    'http://localhost:10000',
     'https://cr8-agency.netlify.app',
     'https://cr8-backend.onrender.com',
-    process.env.FRONTEND_URL,
     ...(process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : [])
   ].filter(Boolean),
   credentials: true,
@@ -46,7 +45,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// FIXED: CR8 System Prompt - aligned with config.js PROMPT_TEMPLATE format
+// CR8 System Prompt
 function getCR8SystemPrompt() {
   return `You are CR8, an AI assistant for a creative digital agency. You are helpful, creative, professional, and knowledgeable about marketing, branding, design, video editing, motion graphics, and business strategy.
 
@@ -78,7 +77,7 @@ Production Process:
 Respond in a friendly, professional, and creative manner while staying true to CR8's brand and services.`;
 }
 
-// FIXED: Training data content - exactly matching config.js DEFAULT_TRAINING_DATA
+// Training data content
 const CR8_TRAINING_DATA = `# CR8 Digital Creative Agency - Training Data
 
 ## About CR8
@@ -127,7 +126,7 @@ We serve clients who need visual storytelling and branding services. Our goal is
 - Visual Storytelling
 `;
 
-// Enhanced fallback response generator - aligned with config.js messaging
+// Fallback response generator
 function generateEnhancedCR8Response(prompt) {
   const responses = {
     greeting: [
@@ -156,10 +155,8 @@ function generateEnhancedCR8Response(prompt) {
       "Great question! Here's my professional take based on CR8's experience in creative projects..."
     ]
   };
-
   const lowerPrompt = prompt.toLowerCase();
   let responseArray = responses.default;
-
   if (lowerPrompt.includes('hello') || lowerPrompt.includes('hi') || lowerPrompt.includes('hey')) {
     responseArray = responses.greeting;
   } else if (lowerPrompt.includes('service') || lowerPrompt.includes('what do') || lowerPrompt.includes('offer')) {
@@ -169,19 +166,13 @@ function generateEnhancedCR8Response(prompt) {
   } else if (lowerPrompt.includes('contact') || lowerPrompt.includes('email') || lowerPrompt.includes('portfolio') || lowerPrompt.includes('reach')) {
     responseArray = responses.contact;
   }
-
   const randomResponse = responseArray[Math.floor(Math.random() * responseArray.length)];
-  
-  return `${randomResponse}
-
-While I'm currently running on backup systems, I'm still here to provide creative insights and strategic guidance. Feel free to ask me about our services, packages, creative process, or any other agency-related topics!
-
-Is there a specific creative project or challenge you'd like to discuss?`;
+  return `${randomResponse}\n\nWhile I'm currently running on backup systems, I'm still here to provide creative insights and strategic guidance. Feel free to ask me about our services, packages, creative process, or any other agency-related topics!\n\nIs there a specific creative project or challenge you'd like to discuss?`;
 }
 
-// Root endpoint - aligned with config.js endpoint structure
+// Root endpoint
 app.get('/', (req, res) => {
-  res.json({ 
+  res.json({
     message: 'CR8 Backend API is running',
     status: 'ok',
     app: 'CR8 AI Assistant',
@@ -196,7 +187,7 @@ app.get('/', (req, res) => {
   });
 });
 
-// FIXED: Health check endpoint - matching config.js expectations
+// Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'healthy',
@@ -209,11 +200,9 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// FIXED: Training data endpoint - return JSON format as expected by config.js
+// Training data endpoint
 app.get('/api/training-data', (req, res) => {
   console.log('📚 Training data requested');
-  
-  // FIXED: Return JSON format with 'content' property as expected by config.js
   res.json({
     content: CR8_TRAINING_DATA,
     source: 'server',
@@ -222,82 +211,48 @@ app.get('/api/training-data', (req, res) => {
   });
 });
 
-// FIXED: Chat endpoint - properly aligned with config.js expectations
+// Chat endpoint
 app.post('/api/chat', async (req, res) => {
   try {
     const { prompt } = req.body;
-    
     console.log('=== CHAT REQUEST DEBUG ===');
     console.log('Timestamp:', new Date().toISOString());
     console.log('Prompt received:', !!prompt);
     console.log('Prompt length:', prompt?.length || 0);
     console.log('Request body keys:', Object.keys(req.body));
-    
     if (!prompt || typeof prompt !== 'string') {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'Invalid prompt provided',
         details: 'Prompt must be a non-empty string',
         received: { prompt: typeof prompt, body: Object.keys(req.body) }
       });
     }
-
-    // Check if Gemini API key exists and is valid
     const apiKey = process.env.GEMINI_API_KEY;
     console.log('API Key check:', {
       exists: !!apiKey,
       format: apiKey ? apiKey.substring(0, 10) + '...' : 'none',
       startsWithAIza: apiKey ? apiKey.startsWith('AIza') : false
     });
-
-    if (!apiKey) {
-      console.log('❌ No Gemini API key found - using fallback');
-      const fallbackResponse = generateEnhancedCR8Response(prompt);
-      // FIXED: Return format exactly as expected by config.js
-      return res.json({
-        candidates: [{
-          content: {
-            parts: [{
-              text: fallbackResponse
-            }]
-          }
-        }],
-        source: 'fallback',
-        reason: 'no_api_key'
-      });
-    }
-
-    if (!apiKey.startsWith('AIza')) {
-      console.log('❌ Invalid Gemini API key format');
+    if (!apiKey || !apiKey.startsWith('AIza')) {
+      console.log('❌ No/invalid Gemini API key - using fallback');
       const fallbackResponse = generateEnhancedCR8Response(prompt);
       return res.json({
         candidates: [{
           content: {
-            parts: [{
-              text: fallbackResponse
-            }]
+            parts: [{ text: fallbackResponse }]
           }
         }],
         source: 'fallback',
-        reason: 'invalid_api_key_format'
+        reason: !apiKey ? 'no_api_key' : 'invalid_api_key_format'
       });
     }
-
-    // Try Gemini API with better error handling
     try {
       console.log('🔄 Attempting Gemini API call...');
-      
       const systemPrompt = getCR8SystemPrompt();
-      // FIXED: Format prompt exactly like config.js PROMPT_TEMPLATE expects
-      const fullPrompt = `${systemPrompt}
-
-User: ${prompt}
-CR8 Assistant:`;
-      
+      const fullPrompt = `${systemPrompt}\n\nUser: ${prompt}\nCR8 Assistant:`;
       const requestBody = {
         contents: [{
-          parts: [{
-            text: fullPrompt
-          }]
+          parts: [{ text: fullPrompt }]
         }],
         generationConfig: {
           temperature: 0.8,
@@ -307,130 +262,62 @@ CR8 Assistant:`;
           stopSequences: ["User:", "Human:"]
         },
         safetySettings: [
-          {
-            category: "HARM_CATEGORY_HARASSMENT",
-            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-          },
-          {
-            category: "HARM_CATEGORY_HATE_SPEECH", 
-            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-          },
-          {
-            category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-          },
-          {
-            category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-          }
+          { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
+          { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
+          { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
+          { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_MEDIUM_AND_ABOVE" }
         ]
       };
-
-      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-      
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`;
       console.log('Making request to Gemini API...');
       const response = await fetch(apiUrl, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestBody)
       });
-
       console.log('Gemini API response status:', response.status);
-
       if (!response.ok) {
         const errorText = await response.text();
-        console.log('❌ Gemini API Error:', {
-          status: response.status,
-          statusText: response.statusText,
-          error: errorText
-        });
-        
+        console.log('❌ Gemini API Error:', { status: response.status, statusText: response.statusText, error: errorText });
         const fallbackResponse = generateEnhancedCR8Response(prompt);
         return res.json({
           candidates: [{
-            content: {
-              parts: [{
-                text: fallbackResponse
-              }]
-            }
+            content: { parts: [{ text: fallbackResponse }] }
           }],
           source: 'fallback',
           reason: 'api_error',
-          error: {
-            status: response.status,
-            message: errorText
-          }
+          error: { status: response.status, message: errorText }
         });
       }
-
       const data = await response.json();
       console.log('Gemini API response structure:', {
         hasCandidates: !!data.candidates,
         candidatesLength: data.candidates?.length || 0
       });
-
-      const aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
-      
-      if (!aiResponse || !aiResponse.trim()) {
-        console.log('❌ Empty response from Gemini API');
-        
-        const fallbackResponse = generateEnhancedCR8Response(prompt);
-        return res.json({
-          candidates: [{
-            content: {
-              parts: [{
-                text: fallbackResponse
-              }]
-            }
-          }],
-          source: 'fallback',
-          reason: 'empty_response'
-        });
-      }
-
+      const aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || CONFIG.MESSAGES.NO_RESPONSE;
       console.log('✅ Successful Gemini response');
-      
-      // FIXED: Return exact format expected by config.js
       return res.json({
         candidates: [{
-          content: {
-            parts: [{
-              text: aiResponse.trim()
-            }]
-          }
+          content: { parts: [{ text: aiResponse.trim() }] }
         }],
         source: 'gemini',
         success: true
       });
-
     } catch (apiError) {
-      console.log('❌ Gemini API Request Failed');
-      console.log('Error details:', {
-        name: apiError.name,
-        message: apiError.message
-      });
-      
+      console.log('❌ Gemini API Request Failed:', { name: apiError.name, message: apiError.message });
       const fallbackResponse = generateEnhancedCR8Response(prompt);
       return res.json({
         candidates: [{
-          content: {
-            parts: [{
-              text: fallbackResponse
-            }]
-          }
+          content: { parts: [{ text: fallbackResponse }] }
         }],
         source: 'fallback',
         reason: 'network_error',
         error: apiError.message
       });
     }
-
   } catch (error) {
-    console.log('❌ CRITICAL ERROR in chat endpoint');
-    console.log('Error:', error);
-    res.status(500).json({ 
+    console.log('❌ CRITICAL ERROR in chat endpoint:', error);
+    res.status(500).json({
       error: 'Internal server error',
       message: 'Something went wrong processing your request',
       details: error.message
@@ -438,7 +325,7 @@ CR8 Assistant:`;
   }
 });
 
-// FIXED: Debug endpoint - aligned with config.js expectations
+// Debug endpoint
 app.get('/api/debug', (req, res) => {
   res.json({
     app: 'CR8 AI Assistant',
@@ -446,8 +333,7 @@ app.get('/api/debug', (req, res) => {
     environment: process.env.NODE_ENV || 'development',
     port: PORT,
     hasGeminiKey: !!process.env.GEMINI_API_KEY,
-    geminiKeyFormat: process.env.GEMINI_API_KEY ? 
-      (process.env.GEMINI_API_KEY.startsWith('AIza') ? 'valid' : 'invalid') : 'missing',
+    geminiKeyFormat: process.env.GEMINI_API_KEY ? (process.env.GEMINI_API_KEY.startsWith('AIza') ? 'valid' : 'invalid') : 'missing',
     cors: corsOptions.origin,
     timestamp: new Date().toISOString(),
     nodeVersion: process.version,
@@ -484,8 +370,7 @@ app.use((error, req, res, next) => {
   console.error('Method:', req.method);
   console.error('Error:', error);
   console.error('Stack:', error.stack);
-  
-  res.status(500).json({ 
+  res.status(500).json({
     error: 'Internal server error',
     message: 'Something went wrong',
     url: req.url,
@@ -508,7 +393,6 @@ process.on('SIGTERM', () => {
   console.log('🛑 SIGTERM received, shutting down gracefully');
   process.exit(0);
 });
-
 process.on('SIGINT', () => {
   console.log('🛑 SIGINT received, shutting down gracefully');
   process.exit(0);
