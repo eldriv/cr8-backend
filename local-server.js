@@ -161,8 +161,8 @@ app.get('/api/health', (req, res) => {
 
 // Training data endpoint
 app.get('/api/training-data', (req, res) => {
-  const trainingData = `
-CR8 - Digital Solutions Company
+  console.log('Training data requested');
+  const trainingData = `CR8 - Digital Solutions Company
 
 CR8 is a digital creative agency that helps clients bring their creative vision to life through graphic design, video editing, animation, and motion graphics.
 What's the tagline of CR8?
@@ -209,9 +209,11 @@ Brands trust CR8 because we:
 - Uphold the highest quality standards
 - Align projects with brand identity
 - Stay current with industry trends
-`;
+Web Developer and Software Engineer of CR8: Eldriv | Michael Adrian A. Villareal`;
 
-  res.json({ trainingData });
+  // Return as plain text to match frontend expectation
+  res.setHeader('Content-Type', 'text/plain');
+  res.send(trainingData);
 });
 
 // Version endpoint
@@ -224,27 +226,57 @@ app.get('/api/version', (req, res) => {
   });
 });
 
-// Gemini endpoint - Enhanced with better error handling
-app.post('/api/gemini', (req, res) => {
+// Gemini endpoint - Enhanced with better error handling and proper response format
+app.post('/api/gemini', async (req, res) => {
   console.log('POST /api/gemini - Request received');
   
-  const { prompt } = req.body;
+  try {
+    const { prompt } = req.body;
 
-  if (!prompt) {
-    console.log('❌ Missing prompt in request body');
-    return res.status(400).json({ 
-      error: 'Missing prompt in request body',
-      received: Object.keys(req.body)
+    if (!prompt) {
+      console.log('❌ Missing prompt in request body');
+      return res.status(400).json({ 
+        error: 'Missing prompt in request body',
+        received: Object.keys(req.body)
+      });
+    }
+
+    console.log('✅ Valid prompt received, length:', prompt.length);
+    console.log('Prompt preview:', prompt.substring(0, 200) + '...');
+
+    // Simple response generation based on the prompt
+    let response;
+    
+    // Check if it's a CR8-related question
+    if (prompt.toLowerCase().includes('cr8') || prompt.toLowerCase().includes('what is cr8')) {
+      response = `CR8 is a digital creative agency that helps clients bring their creative vision to life through graphic design, video editing, animation, and motion graphics. Our tagline is "Let's Create & Unleash Your Creative Vision."
+
+We offer services including:
+- Graphic Design
+- Video Editing
+- Motion Graphics
+- Animation
+- Logo Animation
+
+You can contact us at creativscr8@gmail.com or eldriv@proton.me, and view our portfolio at https://cr8-agency.netlify.app/#works.`;
+    } else {
+      response = `Thank you for your question. I'm the CR8 assistant and I'm here to help with information about CR8's services, portfolio, and general inquiries. 
+
+If you have questions about CR8's creative services, production process, or packages, feel free to ask!`;
+    }
+
+    // Return response as plain text (this is what your frontend expects)
+    console.log('✅ Sending response, length:', response.length);
+    res.setHeader('Content-Type', 'text/plain');
+    res.send(response);
+
+  } catch (error) {
+    console.error('❌ Error in Gemini endpoint:', error);
+    res.status(500).json({
+      error: 'Internal server error',
+      message: error.message
     });
   }
-
-  console.log('✅ Valid prompt received, length:', prompt.length);
-
-  // For testing, just echo back the prompt with a dummy response
-  res.json({
-    reply: `Received your prompt of length ${prompt.length}. (This is a placeholder response from CR8 backend.)`,
-    timestamp: new Date().toISOString()
-  });
 });
 
 // GET version of Gemini endpoint for testing
