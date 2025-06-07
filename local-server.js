@@ -25,7 +25,6 @@ app.use('/api/', limiter);
 // CORS configuration
 const corsOptions = {
   origin: [
-    'http://localhost:3002',
     'https://cr8-agency.netlify.app',
     process.env.FRONTEND_URL,
     ...(process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : [])
@@ -289,7 +288,7 @@ app.post('/api/chat', async (req, res) => {
         ]
       };
 
-      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${process.env.GEMINI_API_KEY}`;
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
       
       const response = await fetch(apiUrl, {
         method: 'POST',
