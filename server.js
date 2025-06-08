@@ -66,16 +66,24 @@ app.use('*', (req, res) => {
 // Start server
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-  console.log(`Health check: http://localhost:${PORT}/api/health`);
-  console.log(`Chat endpoint: http://localhost:${PORT}/api/chat`);
-  console.log(`Test Gemini: http://localhost:${PORT}/api/test-gemini`);
-  console.log(`Training data: http://localhost:${PORT}/api/training-data`);
+  
+  // Determine base URL based on environment
+  const isProduction = process.env.NODE_ENV === 'production';
+  const baseUrl = isProduction 
+    ? 'https://cr8-backend.onrender.com' 
+    : `http://localhost:${PORT}`;
+  
+  console.log(`Health check: ${baseUrl}/api/health`);
+  console.log(`Chat endpoint: ${baseUrl}/api/chat`);
+  console.log(`Test Gemini: ${baseUrl}/api/test-gemini`);
+  console.log(`Training data: ${baseUrl}/api/training-data`);
   
   // Log environment info
   console.log('\n📋 Environment:');
   console.log(`- Node.js: ${process.version}`);
   console.log(`- Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`- Port: ${PORT}`);
+  console.log(`- Base URL: ${baseUrl}`);
   console.log(`- Gemini API: ${process.env.GEMINI_API_KEY ? '✅ Configured' : '❌ Not configured'}`);
   console.log(`- Frontend URL: ${process.env.FRONTEND_URL || 'Not set'}`);
   console.log(`- Allowed Origins: ${process.env.ALLOWED_ORIGINS || 'Not set'}`);
