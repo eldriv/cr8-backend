@@ -1,7 +1,7 @@
 {
-  "name": "chatbot-backend",
+  "name": "cr8-backend",
   "version": "1.0.0",
-  "description": "Backend server for AI chatbot widget",
+  "description": "Backend server for AI chatbot widget for CR8 agency",
   "main": "local-server.js",
   "scripts": {
     "start": "node local-server.js",
@@ -28,10 +28,10 @@
     "express",
     "api"
   ],
-  "author": "Your Name",
+  "author": "eldriv",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/chatbot-backend.git"
+    "url": "https://github.com/eldriv/cr8-backend"
   }
 }
