@@ -66,36 +66,37 @@ app.use('*', (req, res) => {
 // Start server
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-  
-  // Determine base URL based on environment
   const isProduction = process.env.NODE_ENV === 'production';
   const baseUrl = isProduction 
     ? 'https://cr8-backend.onrender.com' 
     : `http://localhost:${PORT}`;
-  
-  console.log(`Health check: ${baseUrl}/api/health`);
-  console.log(`Chat endpoint: ${baseUrl}/api/chat`);
-  console.log(`Test Gemini: ${baseUrl}/api/test-gemini`);
-  console.log(`Training data: ${baseUrl}/api/training-data`);
-  
-  // Log environment info
-  console.log('\n📋 Environment:');
-  console.log(`- Node.js: ${process.version}`);
-  console.log(`- Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`- Port: ${PORT}`);
-  console.log(`- Base URL: ${baseUrl}`);
-  console.log(`- Gemini API: ${process.env.GEMINI_API_KEY ? '✅ Configured' : '❌ Not configured'}`);
-  console.log(`- Frontend URL: ${process.env.FRONTEND_URL || 'Not set'}`);
-  console.log(`- Allowed Origins: ${process.env.ALLOWED_ORIGINS || 'Not set'}`);
+  const endpoints = [ 'Health check: /api/health', 'Chat endpoint: /api/chat',  'Test Gemini: /api/test-gemini',  'Training data: /api/training-data' ];
+
+  for (const endpoint of endpoints) {
+    console.log(`${endpoint.replace(':', `: ${baseUrl}`)}`);
+  }
+  console.log('\nEnvironment:');
+  // Variables
+  const envVars = [
+    ['Node.js', process.version],
+    ['Environment', process.env.NODE_ENV || 'development'],
+    ['Port', PORT],
+    ['Base URL', baseUrl],
+    ['Gemini API', process.env.GEMINI_API_KEY ? 'Configured' : 'Not configured'],
+    ['Frontend URL', process.env.FRONTEND_URL || 'Not set'],
+    ['Allowed Origins', process.env.ALLOWED_ORIGINS || 'Not set']
+  ];
+  for (const [label, value] of envVars) {
+    console.log(`- ${label}: ${value}`);
+  }
 });
 
-// Graceful shutdown
 process.on('SIGTERM', () => {
-  console.log('👋 Received SIGTERM, shutting down gracefully');
+  console.log('Received SIGTERM, shutting down gracefully');
   process.exit(0);
 });
 
 process.on('SIGINT', () => {
-  console.log('👋 Received SIGINT, shutting down gracefully');
+  console.log('Received SIGINT, shutting down gracefully');
   process.exit(0);
 });

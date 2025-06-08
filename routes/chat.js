@@ -22,7 +22,7 @@ router.post('/chat', async (req, res) => {
 
     // Validate API key
     if (!process.env.GEMINI_API_KEY) {
-      console.log('❌ No Gemini API key found - using fallback');
+      console.log('No Gemini API key found - using fallback');
       const fallbackResponse = generateEnhancedCR8Response(prompt);
       return res.json({
         candidates: [{
@@ -39,7 +39,7 @@ router.post('/chat', async (req, res) => {
 
     // Validate API key format
     if (!process.env.GEMINI_API_KEY.startsWith('AIza')) {
-      console.log('❌ Invalid Gemini API key format - should start with "AIza"');
+      console.log('Invalid Gemini API key format - should start with "AIza"');
       const fallbackResponse = generateEnhancedCR8Response(prompt);
       return res.json({
         candidates: [{
@@ -54,9 +54,8 @@ router.post('/chat', async (req, res) => {
       });
     }
 
-    // Try Gemini API
     try {
-      console.log('🔄 Attempting Gemini API call...');
+      console.log('Attempting Gemini API call...');
       
       const systemPrompt = getCR8SystemPrompt();
       const fullPrompt = `${systemPrompt}\n\nUser: ${prompt}\n\nCR8 Assistant:`;
@@ -104,12 +103,12 @@ router.post('/chat', async (req, res) => {
         body: JSON.stringify(requestBody)
       });
 
-      console.log('✅ Gemini API response received');
+      console.log('Gemini API response received');
       console.log('Response status:', response.status);
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.log('❌ Gemini API Error Response:', errorText);
+        console.log('Gemini API Error Response:', errorText);
         
         let errorReason = 'api_error';
         if (response.status === 400) errorReason = 'bad_request';
@@ -137,7 +136,7 @@ router.post('/chat', async (req, res) => {
       const aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
       
       if (!aiResponse || !aiResponse.trim()) {
-        console.log('❌ Empty or invalid response from Gemini API');
+        console.log('Empty or invalid response from Gemini API');
         
         if (data.candidates?.[0]?.finishReason === 'SAFETY') {
           console.log('Response blocked by safety filters');
@@ -169,7 +168,7 @@ router.post('/chat', async (req, res) => {
         });
       }
 
-      console.log('✅ Successful Gemini response received');
+      console.log('Successful Gemini response received');
       console.log('Response length:', aiResponse.length);
       
       return res.json({
@@ -184,7 +183,7 @@ router.post('/chat', async (req, res) => {
       });
 
     } catch (apiError) {
-      console.log('❌ Gemini API Request Failed');
+      console.log('Gemini API Request Failed');
       console.log('Error message:', apiError.message);
       
       let errorReason = 'network_error';
@@ -210,7 +209,7 @@ router.post('/chat', async (req, res) => {
     }
 
   } catch (error) {
-    console.log('❌ CRITICAL ERROR in chat endpoint');
+    console.log('CRITICAL ERROR in chat endpoint');
     console.log('Error:', error);
     res.status(500).json({ 
       error: 'Internal server error',
