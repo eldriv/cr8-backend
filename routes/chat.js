@@ -1,6 +1,6 @@
 const express = require('express');
 const fetch = require('node-fetch');
-const { getCR8SystemPrompt, generateEnhancedCR8Response } = require('../utils/cr8Helper');
+const { getCR8SystemPrompt, generateEnhancedCR8Response } = require('../utils/utilities.js');
 const router = express.Router();
 
 router.post('/chat', async (req, res) => {

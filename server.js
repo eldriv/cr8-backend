@@ -65,11 +65,11 @@ app.use('*', (req, res) => {
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
-  console.log(`💬 Chat endpoint: http://localhost:${PORT}/api/chat`);
-  console.log(`🧪 Test Gemini: http://localhost:${PORT}/api/test-gemini`);
-  console.log(`📚 Training data: http://localhost:${PORT}/api/training-data`);
+  console.log(`Server running on port ${PORT}`);
+  console.log(`Health check: http://localhost:${PORT}/api/health`);
+  console.log(`Chat endpoint: http://localhost:${PORT}/api/chat`);
+  console.log(`Test Gemini: http://localhost:${PORT}/api/test-gemini`);
+  console.log(`Training data: http://localhost:${PORT}/api/training-data`);
   
   // Log environment info
   console.log('\n📋 Environment:');
