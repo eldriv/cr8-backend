@@ -23,7 +23,6 @@ router.get('/test-gemini', async (req, res) => {
       return res.json({
         status: 'error',
         message: 'No API key configured',
-        solution: 'Add GEMINI_API_KEY to your .env file'
       });
     }
 
